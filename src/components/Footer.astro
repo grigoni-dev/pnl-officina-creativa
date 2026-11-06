@@ -7,9 +7,10 @@ const social = [
   { nome: 'TikTok', url: contatti.tiktok },
 ].filter((s) => s.url);
 
-const creditLine = Object.values(crediti)
-  .map((c) => `${c.artist} (${c.license})`)
-  .join(', ');
+// Only photos actually on the site: ours by photographer, stand-ins with their licence.
+const usate = Object.values(crediti).filter((c) => !('inUso' in c) || c.inUso !== false);
+const fotografi = [...new Set(usate.filter((c) => !c.standIn).map((c) => c.artist))];
+const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.license})`);
 ---
 <footer class="foot" data-hides-actionbar>
   <div class="wrap foot__grid">
@@ -31,9 +32,12 @@ const creditLine = Object.values(crediti)
     </nav>
   </div>
   <div class="wrap">
-    <p class="foot__credits">
-      Foto da Wikimedia Commons: {creditLine}.
-    </p>
+    {(fotografi.length > 0 || stock.length > 0) && (
+      <p class="foot__credits">
+        {fotografi.length > 0 && <>Foto di {fotografi.join(', ')}.</>}
+        {stock.length > 0 && <> Foto da Wikimedia Commons: {stock.join(', ')}.</>}
+      </p>
+    )}
   </div>
 </footer>
 

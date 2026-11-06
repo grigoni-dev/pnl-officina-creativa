@@ -32,9 +32,9 @@ export type Foto = { src: ImageMetadata | string; alt: string; width?: number; h
 
 export const fotoHero: Foto = {
   src: folla,
-  alt: 'Ragazze e ragazzi sotto il palco che applaudono e fanno il cuore con le mani',
+  alt: 'Un chitarrista canta al microfono sul palco di un evento PNL, sotto le luci viola, con la batteria alle spalle',
   credito: 'folla',
-  posizione: '58% 40%',
+  posizione: '50% 12%',
 };
 
 export const crediti = credits;
