@@ -1,0 +1,298 @@
+/* PNL Officina Creativa — fanzine riso.
+   Two plates (blue, fluorescent pink) on yellow stock. The overprint of the
+   two plates is the only third tone, and it only ever happens by multiply. */
+
+:root {
+  --paper: #ffe14d;
+  --blue: #3255a4;
+  --pink: #ff48b0;
+  --overprint: #321871; /* blue × pink, for text printed on the pink flood */
+
+  --font: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+
+  --gutter: clamp(20px, 4vw, 56px);
+  --max: 1440px;
+  --rule: 3px;
+
+  /* misregistration of the second plate, at rest */
+  --mis-x: 0.06em;
+  --mis-y: 0.04em;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --step--1: clamp(0.875rem, 0.84rem + 0.15vw, 0.95rem);
+  --step-0: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-1: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  --step-2: clamp(1.6rem, 1.3rem + 1.4vw, 2.4rem);
+  --step-3: clamp(2.2rem, 1.5rem + 3vw, 4.2rem);
+  --step-4: clamp(2.3rem, 1rem + 6vw, 6.5rem);
+
+  color-scheme: light;
+  scrollbar-color: var(--blue) var(--paper);
+  accent-color: var(--blue);
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: 96px; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--blue);
+  font-family: var(--font);
+  font-size: var(--step-0);
+  line-height: 1.5;
+  font-weight: 450;
+  font-stretch: 100%;
+  caret-color: var(--blue);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* paper tooth: a faint fibre noise over the whole sheet */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.32;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .2 0 0 0 0 .35 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection { background: var(--pink); color: var(--overprint); }
+
+h1, h2, h3, p, ul, ol, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img { display: block; max-width: 100%; height: auto; }
+
+a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 2px; }
+
+:focus-visible {
+  outline: var(--rule) solid var(--blue);
+  outline-offset: 4px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.skip {
+  position: absolute; left: var(--gutter); top: -100px; z-index: 200;
+  background: var(--blue); color: var(--paper); padding: 12px 18px; font-weight: 700;
+}
+.skip:focus { top: 12px; }
+
+.wrap {
+  width: 100%;
+  max-width: var(--max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* ---------- type ---------- */
+
+.display {
+  font-stretch: 125%;
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.h1 { font-size: var(--step-4); }
+.h2 { font-size: var(--step-3); }
+.h3 { font-size: var(--step-2); line-height: 0.95; }
+
+.lede { font-size: var(--step-1); line-height: 1.35; font-weight: 500; max-width: 34ch; text-wrap: pretty; }
+.body { max-width: 62ch; text-wrap: pretty; }
+.label {
+  font-size: var(--step--1);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- registration: the signature ----------
+   .reg holds the text on the blue plate; .reg__pink is the same words on the
+   pink plate, printed underneath and out of register. Hover or focus on the
+   nearest .reg-host brings it into register. */
+
+.reg { position: relative; isolation: isolate; display: block; }
+.reg__pink {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: var(--pink);
+  transform: translate(var(--mis-x), var(--mis-y));
+  transition: transform 520ms var(--ease-out);
+  pointer-events: none;
+  user-select: none;
+}
+.reg__blue { mix-blend-mode: multiply; }
+.reg-host:hover .reg__pink,
+.reg-host:focus-visible .reg__pink,
+.reg-host:focus-within .reg__pink { transform: translate(0, 0); }
+
+/* ---------- buttons ---------- */
+
+.btn {
+  --pad-y: 0.85em;
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  min-height: 52px;
+  padding: var(--pad-y) 1.4em;
+  border: 0;
+  background: transparent;
+  color: var(--paper);
+  --face: var(--blue);
+  --under: var(--pink);
+  font: inherit;
+  font-weight: 800;
+  font-stretch: 112%;
+  font-size: var(--step-0);
+  line-height: 1.1;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms var(--ease-out);
+}
+/* two plates: the pink one underneath, out of register at rest; the face
+   plate on top, multiplied, so the overlap prints as overprint. */
+.btn::before,
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+.btn::before {
+  z-index: -2;
+  background: var(--under);
+  transform: translate(6px, 5px);
+  transition: transform 420ms var(--ease-out);
+}
+.btn::after {
+  z-index: -1;
+  background: var(--face);
+  mix-blend-mode: multiply;
+}
+.btn:hover::before,
+.btn:focus-visible::before { transform: translate(0, 0); }
+.btn:active { transform: translateY(2px); }
+
+.btn--paper { color: var(--blue); --face: var(--paper); --under: var(--blue); }
+.btn--paper::after { mix-blend-mode: normal; }
+.btn--paper:hover::after,
+.btn--paper:focus-visible::after { background: transparent; }
+.btn--paper:hover, .btn--paper:focus-visible { color: var(--paper); }
+
+.link {
+  font-weight: 700;
+  text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 2px no-repeat;
+  padding-bottom: 2px;
+  transition: background-size 320ms var(--ease-out);
+}
+.link:hover { background-size: 0% 2px; background-position: 100% 100%; }
+
+/* ---------- prints: photographs as two-plate riso ----------
+   See Print.astro. Each .ink is grey image + dot screen (screen blend),
+   thresholded by contrast() into real halftone dots, then inked by an SVG
+   filter that maps black to the ink and white to paper (or to nothing). */
+
+.print {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--paper);
+}
+.ink {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  overflow: hidden;
+}
+.ink img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* pre-darken so that screen + threshold gives dot area ∝ darkness */
+  filter: grayscale(1) contrast(1.1) brightness(0.6);
+}
+.ink::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* dot coverage: black ≈ full cell, mid grey ≈ 45%, white none */
+  background: radial-gradient(circle farthest-corner at center, #000 0%, #a0a0a0 100%) 0 0 / var(--cell, 5px) var(--cell, 5px);
+  mix-blend-mode: screen;
+}
+.ink--blue { filter: contrast(14) url(#ink-blue); }
+.ink--pink {
+  --cell: 6px;
+  filter: contrast(14) url(#ink-pink);
+  mix-blend-mode: multiply;
+  transform: translate(7px, 5px);
+  transition: transform 600ms var(--ease-out);
+}
+/* pink prints only the deepest shadows (about the darkest quarter), at a low dot ceiling */
+.ink--pink img { filter: grayscale(1) contrast(1.2) brightness(1.9); }
+.ink--pink::after { background-image: radial-gradient(circle farthest-corner at center, #000 0%, #d8d8d8 100%); }
+.ink--pink::after { background-position: 2px 3px; }
+.hero__photo .ink--blue { --cell: 4px; }
+.reg-host:hover .ink--pink,
+.reg-host:focus-visible .ink--pink,
+.reg-host:focus-within .ink--pink { transform: translate(0, 0); }
+
+/* ---------- stamp for stand-ins ---------- */
+.stamp {
+  position: absolute;
+  z-index: 3;
+  right: 10px;
+  top: 10px;
+  padding: 4px 8px;
+  border: 2px solid var(--pink);
+  color: var(--overprint);
+  background: var(--paper);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+}
+
+.stamp--inline { position: static; display: inline-block; justify-self: start; transform: rotate(-2deg); }
+
+/* ---------- fields ---------- */
+.field { display: grid; gap: 6px; }
+.field label { font-size: var(--step--1); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0 8px;
+  border: 0;
+  border-bottom: var(--rule) solid var(--blue);
+  border-radius: 0;
+  background: transparent;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--step-1);
+}
+.field input::placeholder { color: var(--blue); font-weight: 400; opacity: 1; }
+.field input:focus { outline: none; border-bottom-color: var(--overprint); background: color-mix(in srgb, var(--pink) 14%, transparent); }
+.field input:focus-visible { outline: none; }
+.field input:user-invalid { border-bottom-style: dashed; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+}

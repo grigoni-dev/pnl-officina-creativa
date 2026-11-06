@@ -1,0 +1,173 @@
+---
+const links = [
+  { href: '/#chi-siamo', label: 'Chi siamo' },
+  { href: '/eventi', label: 'Album' },
+  { href: '/#tessera', label: 'Tessera' },
+  { href: '/#contatti', label: 'Contatti' },
+];
+---
+<header class="mast">
+  <div class="wrap mast__row">
+    <a class="mark reg-host" href="/" aria-label="PNL Officina Creativa, home">
+      <span class="mark__pnl reg" aria-hidden="true">
+        <span class="reg__blue">PNL</span><span class="reg__pink">PNL</span>
+      </span>
+      <span class="mark__sub" aria-hidden="true">Officina<br />Creativa</span>
+    </a>
+
+    <nav class="mast__nav" aria-label="Principale">
+      <ul>
+        {links.map((l) => <li><a class="mast__link" href={l.href} aria-current={Astro.url.pathname.startsWith(l.href) && l.href !== '/' && !l.href.includes('#') ? 'page' : undefined}>{l.label}</a></li>)}
+      </ul>
+    </nav>
+
+    <a class="btn mast__cta" href="/tesseramento">Diventa socio · 5&nbsp;€</a>
+
+    <button class="mast__menu" type="button" aria-expanded="false" aria-controls="menu">
+      <span class="sr-only">Apri il menu</span>
+      <svg width="28" height="20" viewBox="0 0 28 20" aria-hidden="true"><path d="M0 3h28M0 10h28M0 17h28" stroke="currentColor" stroke-width="3"/></svg>
+    </button>
+  </div>
+
+  <div class="menu" id="menu" hidden>
+    <ul class="wrap">
+      {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      <li><a href="/verifica">Verifica tessera</a></li>
+    </ul>
+    <div class="wrap"><a class="btn" href="/tesseramento">Diventa socio · 5&nbsp;€</a></div>
+  </div>
+</header>
+
+<a class="btn actionbar" href="/tesseramento">Diventa socio · 5&nbsp;€</a>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('.mast__menu');
+  const menu = document.getElementById('menu');
+  if (btn && menu) {
+    const set = (open: boolean) => {
+      btn.setAttribute('aria-expanded', String(open));
+      btn.querySelector('.sr-only')!.textContent = open ? 'Chiudi il menu' : 'Apri il menu';
+      menu.hidden = !open;
+      document.documentElement.classList.toggle('menu-open', open);
+    };
+    btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+    menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) set(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { set(false); btn.focus(); } });
+  }
+
+  // The mobile action bar steps aside while a signup form or the footer is on screen.
+  const bar = document.querySelector<HTMLElement>('.actionbar');
+  const targets = document.querySelectorAll('[data-hides-actionbar]');
+  if (bar && targets.length && 'IntersectionObserver' in window) {
+    const visible = new Set<Element>();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => (e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
+      bar.classList.toggle('is-away', visible.size > 0);
+    }, { threshold: 0.35 });
+    targets.forEach((t) => io.observe(t));
+  }
+</script>
+
+<style>
+  .mast {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--paper);
+    border-bottom: var(--rule) solid var(--blue);
+  }
+  .mast__row {
+    display: flex;
+    align-items: center;
+    gap: clamp(16px, 3vw, 40px);
+    min-height: 76px;
+  }
+  .mark {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    margin-right: auto;
+  }
+  .mark__pnl {
+    font-stretch: 125%;
+    font-weight: 900;
+    font-size: 2.1rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .mark__sub {
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .mast__nav ul { display: flex; gap: clamp(16px, 2.4vw, 36px); }
+  .mast__link {
+    font-weight: 700;
+    text-decoration: none;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0% 3px no-repeat;
+    padding-block: 6px;
+    transition: background-size 320ms var(--ease-out);
+  }
+  .mast__link:hover, .mast__link[aria-current] { background-size: 100% 3px; }
+  .mast__cta { min-height: 46px; padding-block: 0.6em; }
+
+  .mast__menu {
+    display: none;
+    width: 52px;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: var(--blue);
+    cursor: pointer;
+  }
+
+  .menu {
+    position: fixed;
+    inset: 79px 0 0;
+    background: var(--paper);
+    padding-block: 24px 40px;
+    display: grid;
+    align-content: space-between;
+    overflow-y: auto;
+  }
+  .menu[hidden] { display: none; }
+  .menu ul { display: grid; }
+  .menu li a {
+    display: block;
+    padding-block: 14px;
+    border-bottom: var(--rule) solid var(--blue);
+    font-stretch: 125%;
+    font-weight: 900;
+    font-size: clamp(1.6rem, 7vw, 2.6rem);
+    letter-spacing: -0.03em;
+    text-decoration: none;
+  }
+  .menu .btn { width: 100%; }
+
+  .actionbar { display: none; }
+
+  @media (max-width: 1080px) {
+    .mast__nav { display: none; }
+  }
+  @media (max-width: 760px) {
+    .mast__cta, .mark__sub { display: none; }
+    .mast__menu { display: inline-flex; }
+    .mast__row { min-height: 76px; }
+    .actionbar {
+      display: flex;
+      position: fixed;
+      z-index: 40;
+      left: 16px;
+      right: 22px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+    .actionbar { transition: transform 360ms var(--ease-out), opacity 200ms; }
+    .actionbar.is-away { transform: translateY(140%); opacity: 0; pointer-events: none; }
+    :global(html.menu-open) .actionbar { display: none; }
+  }
+</style>

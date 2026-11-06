@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Reg from '../../components/Reg.astro';
+import { contatti } from '../../data/site';
+import { completaPagamento, getStripe, type Tessera } from '../../lib/soci';
+import { indirizzoSito } from '../../lib/sito';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+// Stripe sends the member back here. The webhook usually got there first; if
+// not, this activates the member itself (same idempotent path).
+const id = Astro.url.searchParams.get('session_id') ?? '';
+let tessera: Tessera | null = null;
+let stato: 'ok' | 'attesa' | 'errore' = 'errore';
+if (/^cs_[A-Za-z0-9_]+$/.test(id)) {
+  try {
+    const session = await getStripe().checkout.sessions.retrieve(id);
+    tessera = await completaPagamento(session, indirizzoSito(Astro.url));
+    stato = tessera ? 'ok' : 'attesa';
+  } catch (err) {
+    console.error('grazie', err);
+  }
+}
+const n = tessera ? String(tessera.numero).padStart(4, '0') : '';
+---
+<Base title="Benvenuto · PNL Officina Creativa" description="Iscrizione a PNL Officina Creativa.">
+  <Nav />
+  <main id="contenuto" class="grazie">
+    <div class="wrap grazie__in">
+      {stato === 'ok' && tessera && (
+        <>
+          <Reg as="h1" class="display h1" text={`Benvenuto, ${tessera.nome}.`} />
+          <div class="tessera-fatta reg-host">
+            <div class="tessera-fatta__head">
+              <p class="label">Tessera socio N° {n}</p>
+              <p class="label">Una volta sola</p>
+            </div>
+            <p class="tessera-fatta__nome">{tessera.nome} {tessera.cognome}</p>
+            <p class="label">Attiva</p>
+          </div>
+          <p class="lede">Ti abbiamo mandato la tessera a <strong>{tessera.email}</strong>. Se non la vedi, guarda nello spam.</p>
+          <a class="btn" href="/">Torna alla home</a>
+        </>
+      )}
+      {stato === 'attesa' && (
+        <>
+          <Reg as="h1" class="display h2" text="Pagamento in arrivo." />
+          <p class="lede">Stripe sta ancora confermando il pagamento. Appena arriva ti mandiamo la tessera per email: non serve rifare nulla.</p>
+          <a class="btn" href="/">Torna alla home</a>
+        </>
+      )}
+      {stato === 'errore' && (
+        <>
+          <Reg as="h1" class="display h2" text="Non troviamo questo pagamento." />
+          <p class="lede">Se hai pagato, la tessera ti arriva comunque per email entro pochi minuti. Altrimenti scrivici a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>
+          <a class="btn btn--paper" href="/tesseramento">Torna al tesseramento</a>
+        </>
+      )}
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .grazie { min-height: 70svh; padding-block: clamp(48px, 8vw, 120px); }
+  .grazie__in { display: grid; gap: 32px; justify-items: start; }
+  .grazie__in :global(h1) { max-width: 16ch; }
+  .tessera-fatta {
+    width: min(100%, 460px);
+    display: grid;
+    gap: 14px;
+    padding: 18px 24px 22px;
+    border: var(--rule) solid var(--blue);
+    transform: rotate(-2deg);
+  }
+  .tessera-fatta__head { display: flex; justify-content: space-between; gap: 12px; border-bottom: var(--rule) solid var(--blue); padding-bottom: 10px; }
+  .tessera-fatta__nome { font-stretch: 125%; font-weight: 900; font-size: var(--step-2); line-height: 1; letter-spacing: -0.03em; overflow-wrap: anywhere; }
+  .tessera-fatta .label:last-child { justify-self: start; background: var(--pink); color: var(--overprint); padding: 4px 10px; }
+</style>

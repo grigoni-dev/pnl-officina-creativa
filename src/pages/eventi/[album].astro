@@ -1,0 +1,223 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Reg from '../../components/Reg.astro';
+import { albumConFoto, contaFoto, dataAlbum, vicini } from '../../lib/album';
+import { cachePubblica } from '../../lib/sito';
+
+export const prerender = false;
+
+const trovato = await albumConFoto(Astro.params.album ?? '');
+if (!trovato) return new Response(null, { status: 404 });
+const { album: a, foto } = trovato;
+const { piuRecente, precedente } = await vicini(a);
+cachePubblica(Astro.response.headers);
+---
+<Base
+  title={`${a.titolo} · Album · PNL Officina Creativa`}
+  description={`${contaFoto(foto.length)} da ${a.titolo}, ${dataAlbum(a)}${a.luogo ? `, ${a.luogo}` : ''}. Un evento di PNL Officina Creativa.`}
+>
+  <Nav />
+  <main id="contenuto" class="alb">
+    <div class="wrap">
+      <a class="link alb__back" href="/eventi">← Tutti gli album</a>
+
+      <header class="alb__head">
+        <Reg as="h1" class="display h1 alb__title" text={a.titolo} />
+        <dl class="alb__facts">
+          <div><dt class="label">Quando</dt><dd>{dataAlbum(a)}</dd></div>
+          {a.luogo && <div><dt class="label">Dove</dt><dd>{a.luogo}</dd></div>}
+          <div><dt class="label">Foto</dt><dd>{foto.length}</dd></div>
+        </dl>
+        {a.descrizione && <p class="lede alb__desc">{a.descrizione}</p>}
+      </header>
+
+      {foto.length === 0 && <p class="lede">Le foto di questo evento arrivano a breve.</p>}
+      <ol class="alb__grid">
+        {foto.map((f, n) => (
+          <li>
+            <a class="alb__item" href={f.grande} data-n={n} data-w={f.width} data-h={f.height}>
+              <img src={f.thumb} alt={f.alt} width={f.thumbWidth} height={f.thumbHeight} loading={n < 8 ? 'eager' : 'lazy'} decoding="async" />
+            </a>
+          </li>
+        ))}
+      </ol>
+
+      <nav class="alb__pager" aria-label="Altri album">
+        {piuRecente ? <a class="link" href={`/eventi/${piuRecente.slug}`}>← {piuRecente.titolo}<span class="label"> · più recente</span></a> : <span />}
+        {precedente && <a class="link" href={`/eventi/${precedente.slug}`}>{precedente.titolo}<span class="label"> · precedente</span> →</a>}
+      </nav>
+    </div>
+  </main>
+  <Footer />
+
+  {foto.length > 0 && <dialog class="viewer" aria-label={`Foto di ${a.titolo}`}>
+    <figure class="viewer__fig">
+      <img class="viewer__img" src={foto[0].grande} alt={foto[0].alt} width={foto[0].width} height={foto[0].height} loading="lazy" decoding="async" />
+    </figure>
+    <div class="viewer__bar">
+      <p class="label viewer__count" aria-live="polite"></p>
+      <div class="viewer__btns">
+        <button class="viewer__btn" type="button" data-step="-1"><span aria-hidden="true">←</span><span class="sr-only">Foto precedente</span></button>
+        <button class="viewer__btn" type="button" data-step="1"><span aria-hidden="true">→</span><span class="sr-only">Foto successiva</span></button>
+        <a class="viewer__btn viewer__dl" href="" download><span aria-hidden="true">↓</span><span class="sr-only">Scarica la foto</span></a>
+        <button class="viewer__btn" type="button" data-close><span aria-hidden="true">✕</span><span class="sr-only">Chiudi</span></button>
+      </div>
+    </div>
+  </dialog>}
+</Base>
+
+<script>
+  // Photo viewer: a native <dialog> over the grid. Arrows, swipe and Esc work;
+  // without JS each thumbnail simply opens the full-size photo.
+  const dialog = document.querySelector<HTMLDialogElement>('.viewer');
+  const items = [...document.querySelectorAll<HTMLAnchorElement>('.alb__item')];
+  if (dialog && items.length && typeof dialog.showModal === 'function') {
+    const img = dialog.querySelector<HTMLImageElement>('.viewer__img')!;
+    const count = dialog.querySelector<HTMLElement>('.viewer__count')!;
+    const dl = dialog.querySelector<HTMLAnchorElement>('.viewer__dl')!;
+    let cur = 0;
+
+    const show = (n: number) => {
+      cur = (n + items.length) % items.length;
+      const it = items[cur];
+      const thumb = it.querySelector('img');
+      img.src = it.href;
+      img.width = Number(it.dataset.w);
+      img.height = Number(it.dataset.h);
+      img.alt = thumb?.alt ?? '';
+      dl.href = `${it.href}?download=`;
+      count.textContent = `${cur + 1} / ${items.length}`;
+      // warm the neighbours
+      [cur - 1, cur + 1].forEach((k) => { const nb = items[(k + items.length) % items.length]; new Image().src = nb.href; });
+    };
+
+    items.forEach((it, n) => it.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      show(n);
+      dialog.showModal();
+      document.documentElement.classList.add('viewer-open');
+    }));
+    dialog.addEventListener('close', () => {
+      document.documentElement.classList.remove('viewer-open');
+      items[cur].focus();
+    });
+    dialog.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const step = t.closest<HTMLElement>('[data-step]');
+      if (step) show(cur + Number(step.dataset.step));
+      else if (t.closest('[data-close]') || t === dialog || t.classList.contains('viewer__fig')) dialog.close();
+    });
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') show(cur + 1);
+      if (e.key === 'ArrowLeft') show(cur - 1);
+    });
+    let x0: number | null = null;
+    dialog.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') x0 = e.clientX; });
+    dialog.addEventListener('pointerup', (e) => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0;
+      x0 = null;
+      if (Math.abs(dx) > 50) show(cur + (dx < 0 ? 1 : -1));
+    });
+  }
+</script>
+
+<style>
+  .alb { padding-block: clamp(28px, 4vw, 56px) clamp(72px, 10vw, 144px); }
+  .alb__back { display: inline-block; margin-bottom: clamp(24px, 3vw, 40px); }
+  .alb__head {
+    display: grid;
+    gap: 24px;
+    justify-items: start;
+    padding-bottom: clamp(28px, 3.5vw, 48px);
+    margin-bottom: clamp(28px, 3.5vw, 48px);
+    border-bottom: var(--rule) solid var(--blue);
+  }
+  .alb__head :global(.alb__title) { max-width: 18ch; overflow-wrap: anywhere; }
+  .alb__facts { display: flex; flex-wrap: wrap; gap: 12px clamp(28px, 4vw, 64px); margin: 0; }
+  .alb__facts dd { margin: 2px 0 0; font-weight: 800; font-stretch: 112%; font-size: var(--step-1); }
+  .alb__desc { max-width: 52ch; }
+
+  /* contact sheet: every photo, in true colour, same cell size */
+  .alb__grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(6px, 0.8vw, 12px);
+  }
+  .alb__item { display: block; aspect-ratio: 1; overflow: hidden; background: var(--blue); outline-offset: 3px; }
+  .alb__item :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 520ms var(--ease-out), opacity 200ms;
+  }
+  .alb__item:hover :global(img), .alb__item:focus-visible :global(img) { transform: scale(1.04); opacity: 0.88; }
+
+  .alb__pager {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px 32px;
+    margin-top: clamp(40px, 5vw, 72px);
+    padding-top: 18px;
+    border-top: var(--rule) solid var(--blue);
+  }
+  .alb__pager .label { font-size: var(--step--1); }
+
+  /* ---------- viewer ---------- */
+  .viewer {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--blue);
+    color: var(--paper);
+    overflow: hidden;
+  }
+  .viewer[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+  .viewer::backdrop { background: var(--blue); }
+  .viewer :focus-visible { outline-color: var(--paper); }
+  .viewer__fig { display: grid; place-items: center; min-height: 0; overflow: hidden; padding: clamp(12px, 3vw, 40px); }
+  .viewer__img { max-width: 100%; max-height: calc(100dvh - 140px); width: auto; height: auto; object-fit: contain; touch-action: pan-y; user-select: none; }
+  .viewer__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px var(--gutter) calc(12px + env(safe-area-inset-bottom));
+    border-top: var(--rule) solid var(--paper);
+  }
+  .viewer__btns { display: flex; gap: 8px; }
+  .viewer__btn {
+    display: inline-grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: var(--rule) solid var(--paper);
+    background: transparent;
+    color: var(--paper);
+    font: inherit;
+    font-weight: 800;
+    font-size: 1.3rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 160ms, color 160ms;
+  }
+  .viewer__btn:hover, .viewer__btn:focus-visible { background: var(--paper); color: var(--blue); }
+  :global(html.viewer-open) { overflow: hidden; }
+  :global(html.viewer-open .actionbar) { display: none; }
+
+  @media (max-width: 1080px) {
+    .alb__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
+    .alb__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .viewer__btn { width: 48px; height: 48px; }
+  }
+</style>

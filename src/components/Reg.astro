@@ -1,0 +1,14 @@
+---
+/** Display text printed on two plates: blue on top, pink underneath out of register. */
+interface Props {
+  as?: 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div';
+  text: string;
+  class?: string;
+  id?: string;
+}
+const { as: Tag = 'h2', text, class: cls = '', id } = Astro.props;
+---
+<Tag class:list={['reg', cls]} id={id}>
+  <span class="reg__blue">{text}</span>
+  <span class="reg__pink" aria-hidden="true">{text}</span>
+</Tag>

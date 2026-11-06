@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Reg from '../components/Reg.astro';
+import { contatti } from '../data/site';
+import { entroIlLimite, impronta } from '../lib/limiti';
+import { supabaseServizio } from '../lib/supabase';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+// Looks up a card by number and answers with its status only: never a name,
+// never anything else. Rate limited per connection.
+const grezzo = (Astro.url.searchParams.get('numero') ?? '').replace(/\D/g, '');
+const numero = grezzo ? Number(grezzo) : null;
+type Esito = null | 'attivo' | 'receduto' | 'nessuna' | 'limite' | 'errore';
+let esito = null as Esito;
+
+if (numero && numero < 1e7) {
+  try {
+    const chi = await impronta(Astro.request, Astro.clientAddress);
+    if (!(await entroIlLimite(`verifica:${chi}`, 20, 600))) {
+      esito = 'limite';
+      Astro.response.status = 429;
+    } else {
+      const { data, error } = await supabaseServizio()
+        .from('soci')
+        .select('stato')
+        .eq('numero', numero)
+        .in('stato', ['attivo', 'receduto'])
+        .maybeSingle();
+      if (error) throw error;
+      esito = (data?.stato as 'attivo' | 'receduto') ?? 'nessuna';
+    }
+  } catch (err) {
+    console.error('verifica', err);
+    esito = 'errore';
+  }
+}
+const n = numero ? String(numero).padStart(4, '0') : '';
+---
+<Base title="Verifica la tessera · PNL Officina Creativa" description="Controlla se una tessera di PNL Officina Creativa è attiva.">
+  <Nav />
+  <main id="contenuto" class="ver">
+    <div class="wrap ver__in">
+      <Reg as="h1" class="display h1" text="Verifica la tessera" />
+
+      <form class="ver__form" method="get">
+        <div class="field">
+          <label for="numero">Numero tessera</label>
+          <input id="numero" name="numero" type="text" inputmode="numeric" autocomplete="off" value={grezzo} required />
+        </div>
+        <button class="btn" type="submit">Verifica</button>
+      </form>
+
+      <div class="ver__esito" role="status" aria-live="polite">
+        {esito === 'attivo' && <p class="esito esito--ok"><span class="label">Tessera N° {n}</span><strong class="display">Attiva</strong></p>}
+        {esito === 'receduto' && <p class="esito"><span class="label">Tessera N° {n}</span><strong class="display">Receduta</strong></p>}
+        {esito === 'nessuna' && <p class="esito"><span class="label">Tessera N° {n}</span><strong class="display">Non trovata</strong></p>}
+        {esito === 'limite' && <p class="lede">Troppe verifiche in poco tempo. Riprova tra qualche minuto.</p>}
+        {esito === 'errore' && <p class="lede">La verifica non è disponibile in questo momento. Scrivici a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>}
+      </div>
+
+      <p class="body ver__note">Mostriamo solo lo stato della tessera, mai i dati di chi la possiede. Il numero è nell’email che hai ricevuto quando ti sei iscritto.</p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .ver { min-height: 70svh; padding-block: clamp(48px, 8vw, 120px); }
+  .ver__in { display: grid; gap: 36px; justify-items: start; }
+  .ver__form { display: flex; flex-wrap: wrap; align-items: end; gap: 16px 20px; width: min(100%, 560px); }
+  .ver__form .field { flex: 1 1 240px; }
+  .esito { display: grid; gap: 6px; border-top: var(--rule) solid var(--blue); padding-top: 14px; min-width: min(100%, 420px); }
+  .esito strong { font-size: var(--step-3); }
+  .esito--ok strong { background: var(--pink); color: var(--overprint); padding: 0.06em 0.14em 0; justify-self: start; }
+  .ver__note { font-size: var(--step--1); font-weight: 600; max-width: 52ch; }
+  @media (max-width: 560px) { .ver__form .btn { width: 100%; } }
+</style>

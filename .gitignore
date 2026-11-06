@@ -1,0 +1,11 @@
+node_modules
+dist
+.astro
+.impeccable/tmp
+.vercel
+.env
+.env.*
+!.env.example
+.impeccable/review
+.impeccable/hook.cache.json
+.DS_Store

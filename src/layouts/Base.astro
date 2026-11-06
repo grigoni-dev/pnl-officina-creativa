@@ -1,0 +1,49 @@
+---
+import '@fontsource-variable/archivo/wdth.css';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  noindex?: boolean;
+}
+const { title, description, noindex = false } = Astro.props;
+---
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="theme-color" content="#ffe14d" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content="it_IT" />
+  </head>
+  <body>
+    <a class="skip" href="#contenuto">Vai al contenuto</a>
+
+    <!-- Riso inks: halftoned plates are inked through these filters (black to ink, white to paper or to nothing). -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+      <filter id="ink-blue" color-interpolation-filters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="0.196 1" />
+          <feFuncG type="table" tableValues="0.333 0.882" />
+          <feFuncB type="table" tableValues="0.643 0.302" />
+        </feComponentTransfer>
+      </filter>
+      <filter id="ink-pink" color-interpolation-filters="sRGB">
+        <feComponentTransfer>
+          <feFuncR type="table" tableValues="1 1" />
+          <feFuncG type="table" tableValues="0.282 1" />
+          <feFuncB type="table" tableValues="0.69 1" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
+
+    <slot />
+  </body>
+</html>

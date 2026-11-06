@@ -1,0 +1,40 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { Foto } from '../data/site';
+
+/**
+ * A photograph printed as two-plate riso. Each plate is the same file run
+ * through a real amplitude halftone (dot size follows tone): a dot screen is
+ * screened over the grey image, thresholded with contrast(), then mapped to
+ * its ink. Blue prints the image on paper; pink prints only the shadows,
+ * multiplied on top and out of register.
+ */
+interface Props {
+  foto: Foto;
+  widths: number[];
+  sizes: string;
+  class?: string;
+  loading?: 'eager' | 'lazy';
+  stamp?: string;
+  pink?: boolean;
+}
+const { foto, widths, sizes, class: cls = '', loading = 'lazy', stamp, pink = true } = Astro.props;
+const style = foto.posizione ? `object-position:${foto.posizione}` : undefined;
+const remota = typeof foto.src === 'string';
+const common = { src: foto.src as ImageMetadata, widths, sizes, style, loading, format: 'webp' as const, quality: 72 };
+const remote = { src: foto.src as string, width: foto.width, height: foto.height, style, loading, decoding: 'async' as const };
+---
+<figure class:list={['print', cls]}>
+  <div class="ink ink--blue">
+    {remota
+      ? <img {...remote} alt={foto.alt} />
+      : <Image {...common} alt={foto.alt} fetchpriority={loading === 'eager' ? 'high' : undefined} />}
+  </div>
+  {pink && (
+    <div class="ink ink--pink" aria-hidden="true">
+      {remota ? <img {...remote} alt="" /> : <Image {...common} alt="" />}
+    </div>
+  )}
+  {stamp && <span class="stamp">{stamp}</span>}
+</figure>

@@ -1,0 +1,33 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><title>Fanzine Riso</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#FFE14D;--blue:#3255A4;--pink:#FF48B0;--ink:#1D2340}
+*{box-sizing:border-box;margin:0}
+body{width:1440px;height:900px;overflow:hidden;background:var(--paper);color:var(--blue);font-family:Archivo,sans-serif;position:relative}
+body:before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(29,35,64,.08) 1px,transparent 1.2px);background-size:5px 5px;pointer-events:none}
+nav{display:flex;align-items:center;justify-content:space-between;padding:28px 56px;font-weight:700;font-size:17px}
+.logo{font-stretch:125%;font-weight:900;font-size:26px;letter-spacing:-.02em}
+.logo small{display:block;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-stretch:100%}
+nav ul{display:flex;gap:36px;list-style:none}
+nav .cta{background:var(--blue);color:var(--paper);padding:14px 22px}
+h1{position:absolute;left:56px;top:150px;width:860px;font-stretch:125%;font-weight:900;font-size:118px;line-height:.86;letter-spacing:-.045em;mix-blend-mode:multiply}
+h1 span{position:absolute;left:7px;top:5px;color:var(--pink);z-index:-1;width:100%}
+.lede{position:absolute;left:56px;top:560px;width:520px;font-size:24px;line-height:1.3;font-weight:500;color:var(--ink)}
+.photo{position:absolute;right:56px;top:120px;width:460px;height:560px;background:var(--blue);mix-blend-mode:multiply;
+background-image:radial-gradient(circle at 30% 40%,var(--paper) 0 1.5px,transparent 2.2px);background-size:7px 7px;filter:contrast(1.1)}
+.photo:after{content:"";position:absolute;inset:0;transform:translate(10px,8px);background:radial-gradient(ellipse at 50% 80%,var(--pink),transparent 60%);mix-blend-mode:multiply;opacity:.8}
+.card{position:absolute;left:640px;top:470px;width:520px;height:330px;background:var(--paper);border:3px solid var(--blue);padding:26px 28px;transform:rotate(-3deg)}
+.card .n{font-size:14px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.card .five{position:absolute;right:24px;top:6px;font-size:150px;font-weight:900;font-stretch:125%;color:var(--pink);mix-blend-mode:multiply;letter-spacing:-.06em}
+.card label{display:block;margin-top:22px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.card .f{border-bottom:2px solid var(--blue);height:34px;width:300px}
+.card button{position:absolute;left:28px;bottom:26px;background:var(--blue);color:var(--paper);border:0;font:800 22px Archivo;font-stretch:115%;padding:16px 26px}
+.tag{position:absolute;left:56px;bottom:40px;font-size:15px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+</style></head><body>
+<nav><div class="logo">PNL<small>Officina Creativa · Oderzo</small></div><ul><li>Eventi</li><li>Archivio</li><li>Chi siamo</li><li>Sponsor &amp; enti</li></ul><div class="cta">Diventa socio · 5 €</div></nav>
+<h1>Eventi e festival fatti da giovani, a Oderzo.<span aria-hidden="true">Eventi e festival fatti da giovani, a Oderzo.</span></h1>
+<p class="lede">PNL Officina Creativa è l'associazione culturale non profit che porta musica, format e cultura nelle piazze dell'Opitergino.</p>
+<div class="photo"></div>
+<div class="card"><div class="n">Tessera socio N° ____ · per sempre</div><div class="five">5 €</div><label>Nome e cognome</label><div class="f"></div><label>Email</label><div class="f"></div><button>Diventa socio</button></div>
+<div class="tag">Fanzine N° 01 — Oderzo (TV)</div>
+</body></html>

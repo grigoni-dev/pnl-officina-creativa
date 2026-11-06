@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from './Nav.astro';
+import Footer from './Footer.astro';
+import Reg from './Reg.astro';
+import { contatti } from '../data/site';
+interface Props { title: string; heading: string; }
+const { title, heading } = Astro.props;
+---
+<Base title={`${title} · PNL Officina Creativa`} description={heading}>
+  <Nav />
+  <main id="contenuto" class="stub">
+    <div class="wrap stub__in">
+      <Reg as="h1" class="display h2" text={heading} />
+      <div class="body stub__body"><slot /></div>
+      <p><a class="link" href="/">Torna alla home</a> · <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+<style>
+  .stub { min-height: 70svh; padding-block: clamp(56px, 9vw, 128px); }
+  .stub__in { display: grid; gap: 28px; justify-items: start; }
+  .stub__in :global(h1) { max-width: 16ch; }
+  .stub__body { display: grid; gap: 14px; }
+</style>

@@ -1,0 +1,53 @@
+---
+import Print from './Print.astro';
+import { type Album, contaFoto, dataAlbum } from '../lib/album';
+
+/**
+ * An album's cover: the cover photo printed as riso, on top of a stack of
+ * sheets (the rest of the album), with title, date, place and photo count.
+ */
+interface Props { album: Album; sizes: string; headingLevel?: 'h2' | 'h3' }
+const { album: a, sizes, headingLevel: H = 'h3' } = Astro.props;
+---
+<a class="album reg-host" href={`/eventi/${a.slug}`}>
+  <div class="album__stack">
+    {a.copertina
+      ? <Print foto={a.copertina} class="album__print" widths={[320, 480, 640]} sizes={sizes} />
+      : <div class="print album__print album__vuoto" aria-hidden="true"><span class="display">PNL</span></div>}
+    <span class="album__count label">{contaFoto(a.nFoto)}</span>
+  </div>
+  <H class="album__title">{a.titolo}</H>
+  <p class="label album__meta">{dataAlbum(a)}{a.luogo && ` · ${a.luogo}`}</p>
+</a>
+
+<style>
+  .album { display: grid; gap: 10px; align-content: start; text-decoration: none; outline-offset: 8px; }
+  .album__stack { position: relative; isolation: isolate; margin: 0 10px 10px 0; }
+  /* the sheets underneath: the rest of the album, fanned out */
+  .album__stack::before,
+  .album__stack::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--rule) solid var(--blue);
+    background: var(--paper);
+    transition: transform 420ms var(--ease-out);
+  }
+  .album__stack::before { z-index: -2; transform: translate(10px, 10px); }
+  .album__stack::after { z-index: -1; transform: translate(5px, 5px); }
+  .album:hover .album__stack::before, .album:focus-visible .album__stack::before { transform: translate(14px, 14px) rotate(1.5deg); }
+  .album:hover .album__stack::after, .album:focus-visible .album__stack::after { transform: translate(7px, 7px) rotate(0.6deg); }
+  .album__stack :global(.album__print) { aspect-ratio: 4 / 5; border: var(--rule) solid var(--blue); }
+  .album__vuoto { display: grid; place-items: center; color: var(--blue); font-size: clamp(3rem, 6vw, 5rem); }
+  .album__count {
+    position: absolute;
+    z-index: 3;
+    left: 0;
+    bottom: 0;
+    padding: 6px 10px 5px;
+    background: var(--blue);
+    color: var(--paper);
+  }
+  .album__title { font-stretch: 115%; font-weight: 800; font-size: var(--step-1); line-height: 1.1; padding-top: 8px; border-top: var(--rule) solid var(--blue); }
+  .album:hover .album__title { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 0.15em; }
+</style>

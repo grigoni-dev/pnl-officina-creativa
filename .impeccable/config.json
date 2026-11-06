@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "arial",
+        "files": [
+          "src/lib/email.ts"
+        ],
+        "createdAt": "2026-11-06T21:42:25.269Z",
+        "reason": "agent: HTML email must use a web-safe font; email clients don't load Archivo"
+      },
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "files": [
+          "src/lib/email.ts"
+        ],
+        "createdAt": "2026-11-06T21:51:53.368Z",
+        "reason": "agent: HTML email needs a web-safe font; email clients don't load Archivo"
+      }
+    ]
+  }
+}

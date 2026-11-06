@@ -1,0 +1,53 @@
+---
+import { contatti, crediti } from '../data/site';
+
+const social = [
+  { nome: 'Instagram', url: contatti.instagram },
+  { nome: 'Facebook', url: contatti.facebook },
+  { nome: 'TikTok', url: contatti.tiktok },
+].filter((s) => s.url);
+
+const creditLine = Object.values(crediti)
+  .map((c) => `${c.artist} (${c.license})`)
+  .join(', ');
+---
+<footer class="foot" data-hides-actionbar>
+  <div class="wrap foot__grid">
+    <p class="foot__mark display" aria-hidden="true">PNL</p>
+    <div class="foot__col">
+      <p><strong>PNL Officina Creativa</strong><br />Associazione culturale non profit</p>
+      <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>
+      {contatti.emailProvvisoria && <span class="stamp stamp--inline">Indirizzo provvisorio</span>}
+    </div>
+    <nav class="foot__col" aria-label="Socio">
+      <ul>
+        <li><a class="link" href="/eventi">Album degli eventi</a></li>
+        <li><a class="link" href="/tesseramento">Diventa socio</a></li>
+        <li><a class="link" href="/verifica">Verifica la tessera</a></li>
+        <li><a class="link" href="/privacy">Privacy</a></li>
+        {social.map((s) => <li><a class="link" href={s.url!} rel="me">{s.nome}</a></li>)}
+      </ul>
+    </nav>
+  </div>
+  <div class="wrap">
+    <p class="foot__credits">
+      Foto da Wikimedia Commons: {creditLine}.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .foot { background: var(--blue); color: var(--paper); padding-block: clamp(48px, 6vw, 88px) 40px; }
+  .foot ::selection { background: var(--paper); color: var(--blue); }
+  .foot :focus-visible { outline-color: var(--paper); }
+  .foot__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: clamp(16px, 2vw, 32px); align-items: end; }
+  .foot__mark { grid-column: 1 / 7; font-size: clamp(6rem, 18vw, 15rem); line-height: 0.75; letter-spacing: -0.04em; }
+  .foot__col { grid-column: span 3; display: grid; gap: 14px; align-content: end; }
+  .foot__col ul { display: grid; gap: 10px; }
+  .foot__credits { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: 0.8rem; max-width: 110ch; }
+  @media (max-width: 760px) {
+    .foot__mark { grid-column: 1 / -1; }
+    .foot__col { grid-column: 1 / -1; }
+    .foot { padding-bottom: 104px; }
+  }
+</style>

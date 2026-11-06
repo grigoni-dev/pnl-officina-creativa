@@ -1,0 +1,146 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T00:00:00Z",
+  "title": "Design System: PNL Officina Creativa",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Yellow Stock", "canonical": "oklch(90.9% 0.163 97.5)", "tonalRamp": ["#0e0b02", "#2a2719", "#4b4529", "#716633", "#9a893d", "#c4ae44", "#dbd2a7", "#f9efc4"] },
+      "blue": { "role": "primary", "displayName": "Medium Blue Ink", "canonical": "oklch(46.7% 0.134 264.0)", "tonalRamp": ["#00062a", "#0d2255", "#234084", "#4062ae", "#6988c8", "#94aee2", "#c2d1f1", "#e0efff"] },
+      "pink": { "role": "secondary", "displayName": "Fluorescent Pink Ink", "canonical": "oklch(69.3% 0.236 350.2)", "tonalRamp": ["#1b010e", "#460a2d", "#761a4f", "#aa2b74", "#e13e9b", "#ff67c0", "#fcbbd8", "#ffd8f6"] },
+      "overprint": { "role": "tertiary", "displayName": "Overprint Violet", "canonical": "oklch(30.9% 0.141 288.6)", "tonalRamp": ["#0f0035", "#290d62", "#453583", "#645b9c", "#8782b6", "#aca9cf", "#d0cee6", "#ededfc"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The page H1 only, printed on two plates, expanded black (wdth 125, 900)." },
+      "headline": { "displayName": "Headline", "purpose": "Section titles, usually printed on two plates." },
+      "title": { "displayName": "Title", "purpose": "Sub-items: list entries, stations, side columns." },
+      "lede": { "displayName": "Lede", "purpose": "Opening paragraph under a display title, 34ch to 44ch." },
+      "body": { "displayName": "Body", "purpose": "Running text at normal width, max 62ch." },
+      "label": { "displayName": "Label", "purpose": "Uppercase field labels, plate metadata, colophon line, tessera header." },
+      "button": { "displayName": "Button", "purpose": "Every button, semi-expanded (wdth 112, 800)." }
+    },
+    "shadows": [],
+    "plates": [
+      { "name": "reg-type", "value": "translate(0.06em, 0.04em)", "purpose": "Pink copy under two-plate display type, out of register at rest." },
+      { "name": "reg-button", "value": "translate(6px, 5px)", "purpose": "Under plate of every button." },
+      { "name": "reg-price", "value": "translate(5px, 4px)", "purpose": "Pink price plate on the tessera card." },
+      { "name": "reg-print", "value": "translate(7px, 5px)", "purpose": "Pink halftone plate of a photograph." },
+      { "name": "paper-tooth", "value": "fractalNoise baseFrequency .9, numOctaves 2, multiply, opacity 0.32, fixed", "purpose": "The only texture: paper fibre over the whole sheet." },
+      { "name": "ink-filters", "value": "#ink-blue maps black to #3255a4 and white to #ffe14d; #ink-pink maps black to #ff48b0 and white to white, which vanishes under multiply", "purpose": "SVG feComponentTransfer filters in the base layout that ink thresholded halftones." },
+      { "name": "halftone-cell", "value": "5px blue (4px in hero), 6px pink; contrast(14) threshold", "purpose": "Amplitude halftone dot screen." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "All transitions." },
+      { "name": "register-type", "value": "520ms", "purpose": "Two-plate type snapping into register." },
+      { "name": "register-button", "value": "420ms", "purpose": "Button under plate and tessera price snapping into register." },
+      { "name": "register-print", "value": "600ms", "purpose": "Photograph pink plate snapping into register." },
+      { "name": "print-pass", "value": "900ms, translate(0.2em, 0.12em) to rest offset", "purpose": "One-time load animation of the hero H1 pink plate." },
+      { "name": "link-wipe", "value": "320ms background-size", "purpose": "Underline wipe on links." },
+      { "name": "press", "value": "160ms, translateY(2px) on active", "purpose": "Button press." },
+      { "name": "reduced-motion", "value": "1ms durations", "purpose": "All motion collapses under prefers-reduced-motion: reduce." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "1080px" },
+      { "name": "mobile", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Blue face multiplied over a pink plate out of register; snaps into register on hover or focus.",
+      "html": "<button class=\"ds-btn\">Diventa socio</button>",
+      "css": ".ds-btn { --face: var(--blue, #3255a4); --under: var(--pink, #ff48b0); position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0.85em 1.4em; border: 0; border-radius: 0; background: transparent; color: var(--paper, #ffe14d); font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-weight: 800; font-stretch: 112%; font-size: 1.125rem; line-height: 1.1; cursor: pointer; transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn::before, .ds-btn::after { content: ''; position: absolute; inset: 0; } .ds-btn::before { z-index: -2; background: var(--under); transform: translate(6px, 5px); transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn::after { z-index: -1; background: var(--face); mix-blend-mode: multiply; } .ds-btn:hover::before, .ds-btn:focus-visible::before { transform: translate(0, 0); } .ds-btn:focus-visible { outline: 3px solid var(--blue, #3255a4); outline-offset: 4px; } .ds-btn:active { transform: translateY(2px); }"
+    },
+    {
+      "name": "Button on Pink",
+      "kind": "button",
+      "refersTo": "button-on-pink",
+      "description": "Overprint face over a blue plate, for the pink flood.",
+      "html": "<div class=\"ds-flood-pink\" style=\"padding:24px\"><button class=\"ds-btn-onpink\">Diventa socio</button></div>",
+      "css": ".ds-flood-pink { background: #ff48b0; } .ds-btn-onpink { position: relative; isolation: isolate; min-height: 52px; padding: 0.85em 1.4em; border: 0; border-radius: 0; background: transparent; color: #ffe14d; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-weight: 800; font-stretch: 112%; font-size: 1.125rem; line-height: 1.1; cursor: pointer; } .ds-btn-onpink::before, .ds-btn-onpink::after { content: ''; position: absolute; inset: 0; } .ds-btn-onpink::before { z-index: -2; background: #3255a4; transform: translate(6px, 5px); transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-onpink::after { z-index: -1; background: #321871; mix-blend-mode: multiply; } .ds-btn-onpink:hover::before, .ds-btn-onpink:focus-visible::before { transform: translate(0, 0); } .ds-btn-onpink:focus-visible { outline: 3px solid #321871; outline-offset: 4px; }"
+    },
+    {
+      "name": "Paper Button",
+      "kind": "button",
+      "refersTo": "button-paper",
+      "description": "Paper face over a blue plate; on hover or focus the face drops out and it reads paper on blue.",
+      "html": "<button class=\"ds-btn-paper\">Verifica lo stato</button>",
+      "css": ".ds-btn-paper { position: relative; isolation: isolate; min-height: 52px; padding: 0.85em 1.4em; border: 0; border-radius: 0; background: transparent; color: #3255a4; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-weight: 800; font-stretch: 112%; font-size: 1.125rem; line-height: 1.1; cursor: pointer; } .ds-btn-paper::before, .ds-btn-paper::after { content: ''; position: absolute; inset: 0; } .ds-btn-paper::before { z-index: -2; background: #3255a4; transform: translate(6px, 5px); transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-btn-paper::after { z-index: -1; background: #ffe14d; } .ds-btn-paper:hover, .ds-btn-paper:focus-visible { color: #ffe14d; } .ds-btn-paper:hover::after, .ds-btn-paper:focus-visible::after { background: transparent; } .ds-btn-paper:hover::before, .ds-btn-paper:focus-visible::before { transform: translate(0, 0); } .ds-btn-paper:focus-visible { outline: 3px solid #3255a4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field-input",
+      "description": "Boxless field: uppercase label, 3px blue underline; focus turns the stroke overprint and fills pink at 14%.",
+      "html": "<div class=\"ds-field\"><label for=\"ds-nome\">Nome e cognome</label><input id=\"ds-nome\" type=\"text\" /></div>",
+      "css": ".ds-field { display: grid; gap: 6px; color: #3255a4; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; } .ds-field label { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; } .ds-field input { width: 100%; min-height: 48px; padding: 10px 0 8px; border: 0; border-bottom: 3px solid #3255a4; border-radius: 0; background: transparent; color: #3255a4; font: inherit; font-weight: 600; font-size: 1.35rem; } .ds-field input:focus { outline: none; border-bottom-color: #321871; background: color-mix(in srgb, #ff48b0 14%, transparent); } .ds-field input:user-invalid { border-bottom-style: dashed; }"
+    },
+    {
+      "name": "Masthead",
+      "kind": "nav",
+      "refersTo": "nav-masthead",
+      "description": "Sticky paper masthead: two-plate PNL wordmark, bold links with a wipe-in 3px underline, primary button.",
+      "html": "<header class=\"ds-mast\"><a class=\"ds-mark\" href=\"#\"><span class=\"ds-reg\"><span class=\"ds-reg-blue\">PNL</span><span class=\"ds-reg-pink\" aria-hidden=\"true\">PNL</span></span><span class=\"ds-mark-sub\">Officina Creativa<br>Oderzo (TV)</span></a><nav><a class=\"ds-mast-link\" href=\"#\">Cosa facciamo</a><a class=\"ds-mast-link\" href=\"#\">Archivio</a><a class=\"ds-mast-link\" href=\"#\">Oderzo</a></nav></header>",
+      "css": ".ds-mast { display: flex; align-items: center; gap: 32px; min-height: 76px; padding: 0 24px; background: #ffe14d; color: #3255a4; border-bottom: 3px solid #3255a4; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; } .ds-mast nav { display: flex; gap: 28px; } .ds-mark { display: flex; align-items: center; gap: 12px; margin-right: auto; color: inherit; text-decoration: none; } .ds-reg { position: relative; isolation: isolate; display: block; font-stretch: 125%; font-weight: 900; font-size: 2.1rem; line-height: 1; letter-spacing: -0.04em; } .ds-reg-blue { mix-blend-mode: multiply; } .ds-reg-pink { position: absolute; inset: 0; z-index: -1; color: #ff48b0; transform: translate(0.06em, 0.04em); transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-mark:hover .ds-reg-pink, .ds-mark:focus-visible .ds-reg-pink { transform: translate(0, 0); } .ds-mark-sub { font-size: 0.78rem; font-weight: 700; line-height: 1.15; letter-spacing: 0.05em; text-transform: uppercase; } .ds-mast-link { color: inherit; font-weight: 700; text-decoration: none; padding-block: 6px; background: linear-gradient(currentColor, currentColor) 0 100% / 0% 3px no-repeat; transition: background-size 320ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-mast-link:hover { background-size: 100% 3px; } .ds-mast a:focus-visible { outline: 3px solid #3255a4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Two-plate Display",
+      "kind": "custom",
+      "refersTo": "display",
+      "description": "Signature: display type on two plates, pink out of register at rest, in register on hover or focus.",
+      "html": "<a class=\"ds-reghost\" href=\"#\"><span class=\"ds-regtype\"><span class=\"ds-regtype-blue\">Cosa facciamo</span><span class=\"ds-regtype-pink\" aria-hidden=\"true\">Cosa facciamo</span></span></a>",
+      "css": ".ds-reghost { display: inline-block; color: #3255a4; text-decoration: none; background: #ffe14d; padding: 16px; } .ds-regtype { position: relative; isolation: isolate; display: block; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-stretch: 125%; font-weight: 900; font-size: 3.6rem; line-height: 0.88; letter-spacing: -0.04em; } .ds-regtype-blue { mix-blend-mode: multiply; } .ds-regtype-pink { position: absolute; inset: 0; z-index: -1; color: #ff48b0; transform: translate(0.06em, 0.04em); transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1); user-select: none; pointer-events: none; } .ds-reghost:hover .ds-regtype-pink, .ds-reghost:focus-visible .ds-regtype-pink { transform: translate(0, 0); } .ds-reghost:focus-visible { outline: 3px solid #3255a4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Tessera Price Plate",
+      "kind": "custom",
+      "refersTo": "price-plate",
+      "description": "Pink plate with overprint numerals, offset at rest, in register when the card is hovered or focused.",
+      "html": "<div class=\"ds-tessera\" tabindex=\"0\"><p class=\"ds-price\">5&nbsp;€</p></div>",
+      "css": ".ds-tessera { display: inline-block; padding: 18px 24px 20px; background: #ffe14d; border: 3px solid #3255a4; transform: rotate(-2.5deg); } .ds-price { margin: 0; padding: 0.08em 0.14em 0.02em; background: #ff48b0; color: #321871; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-stretch: 125%; font-weight: 900; font-size: 5rem; line-height: 0.8; letter-spacing: -0.04em; transform: translate(5px, 4px); transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-tessera:hover .ds-price, .ds-tessera:focus-within .ds-price, .ds-tessera:focus-visible .ds-price { transform: none; } .ds-tessera:focus-visible { outline: 3px solid #3255a4; outline-offset: 4px; }"
+    },
+    {
+      "name": "Stand-in Stamp",
+      "kind": "chip",
+      "refersTo": "stamp",
+      "description": "Rotated provenance stamp that flags stand-in assets until the real ones arrive.",
+      "html": "<span class=\"ds-stamp\">Foto provvisoria</span>",
+      "css": ".ds-stamp { display: inline-block; padding: 4px 8px; border: 2px solid #ff48b0; color: #321871; background: #ffe14d; font-family: 'Archivo Variable', 'Archivo', system-ui, sans-serif; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; transform: rotate(-4deg); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Riso Fanzine",
+    "overview": "The site is printed, not rendered. Everything sits on one sheet of yellow uncoated stock and is laid down by two transparent inks, Medium Blue and Fluorescent Pink. Where they cross, the overprint is the only third tone, and it is produced by multiplication: blue (#3255a4) multiplied by pink (#ff48b0) gives exactly the overprint (#321871). The build carries this literally. Plates multiply in CSS (`mix-blend-mode: multiply`), photographs are run through a real amplitude halftone and inked by SVG filters (`#ink-blue`, `#ink-pink` in the base layout), and a faint fractal-noise paper tooth is multiplied over the whole viewport at 0.32 opacity.\n\nThe signature is misregistration. The second plate sits a few points off at rest: display type, buttons, the price plate and photographs all carry it. It snaps into register on hover or focus, so interaction feels like a press pulling the plates into alignment. Density is a zine's: large expanded-black display, 3px plate rules between stories, and full-bleed floods of a single ink for whole sections. The page is in daylight, never dark, and never glossy.\n\nThe locale is Italian (`lang=\"it\"`, `og:locale it_IT`). Copy, labels and stamps are written in Italian.",
+    "keyCharacteristics": [
+      "One drenched ground (yellow paper) and two inks; the overprint is the only third tone.",
+      "Misregistration at rest, in register on hover or focus.",
+      "Photographs as two-plate amplitude halftones, never full colour.",
+      "Archivo on its width axis: 125% expanded black for display, 100% for text.",
+      "Square corners, 3px plate rules, no soft shadows, no visible gradients."
+    ],
+    "rules": [
+      { "name": "The Two Inks Rule", "body": "Every mark is paper, blue, pink, or their overprint. Tints are allowed only as an ink at reduced coverage (the focused field fills with pink at 14% via `color-mix`). Greys, blacks and whites never appear as visible color; the `#000`/grey values inside the halftone screen are mechanism, inked away by the SVG filters.", "section": "colors" },
+      { "name": "The Multiply Rule", "body": "Where two inks meet, they multiply. Plates stacked over one another use `mix-blend-mode: multiply` (button face, halftone pink plate, the blue station numerals on the pink flood) so the overlap prints as overprint rather than one ink hiding the other.", "section": "colors" },
+      { "name": "The Flood Pairing Rule", "body": "On the blue flood, paper is the text and selection is paper on blue. On the pink flood, overprint is the text, rules and focus outline, and selection is pink on overprint. Focus outlines switch to the flood's text color.", "section": "colors" },
+      { "name": "The Width Axis Rule", "body": "Hierarchy is carried by width and weight together: display and titles at wdth 125/900, buttons and plate titles in between (wdth 112 to 115, 800), text at wdth 100. Do not add a second family.", "section": "typography" },
+      { "name": "The Two Plates Type Rule", "body": "Display text that is printed on two plates keeps the blue face on top (multiplied) and an identical pink copy underneath, offset by 0.06em by 0.04em. The pink copy is `aria-hidden` and not selectable.", "section": "typography" },
+      { "name": "The Misregistration Rule", "body": "The offset is always a second ink, always a few points, and always snaps to zero on hover or focus (`.reg-host` and its descendants, buttons, the tessera price). Transitions use `ease-out` (cubic-bezier(0.16, 1, 0.3, 1)) at 420ms to 600ms. Reduced motion collapses all of this to an instant change.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do print every visible mark in paper, blue, pink or overprint, and multiply plates where they overlap.",
+      "Do give display type, primary buttons and photographs a second plate out of register at rest, and close it on hover or focus.",
+      "Do run photographs through the two-plate halftone print; keep the dot screen real (tone sets dot size).",
+      "Do separate stories with the 3px plate rule or by switching to a blue or pink flood, and swap text, selection and focus colors to the flood's pairing.",
+      "Do keep text at normal width and weight 450, with a body measure of at most 62ch.",
+      "Do write all interface copy in Italian."
+    ],
+    "donts": [
+      "Don't round corners, add soft or grey shadows, or use visible gradients. The only offset is an ink plate.",
+      "Don't introduce a fourth color, black, white or grey text, or full-colour photographs.",
+      "Don't set body or small text in pink on paper; pink carries offsets, plates, marks and floods.",
+      "Don't add a second typeface; vary the Archivo width axis instead.",
+      "Don't leave misregistration on during interaction, and don't animate it when reduced motion is requested."
+    ]
+  }
+}

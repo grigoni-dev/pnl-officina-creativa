@@ -1,0 +1,39 @@
+---
+import Stub from '../components/Stub.astro';
+import { contatti } from '../data/site';
+
+/**
+ * BOZZA da far verificare all'associazione. CLIENT SLOT: sede legale e codice
+ * fiscale dell'associazione (titolare), e durata di conservazione decisa.
+ */
+const titolare = {
+  nome: 'PNL Officina Creativa, associazione culturale',
+  sede: '[sede legale da inserire]',
+  cf: '[codice fiscale dell’associazione da inserire]',
+};
+---
+<Stub title="Privacy" heading="Informativa privacy">
+  <p class="stamp stamp--inline">Bozza da verificare</p>
+
+  <h2 class="display h3">Chi tratta i tuoi dati</h2>
+  <p>Il titolare del trattamento è {titolare.nome}, con sede in {titolare.sede}, C.F. {titolare.cf}. Per qualsiasi richiesta scrivi a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>
+
+  <h2 class="display h3">Quali dati e perché</h2>
+  <p>Quando ti iscrivi raccogliamo nome, cognome, data e luogo di nascita, codice fiscale, indirizzo di residenza, email e, se vuoi, il telefono. Servono a tenere il libro soci, come prevedono la legge e lo statuto, e a mandarti la tessera e le comunicazioni dell’associazione che riguardano la tua iscrizione.</p>
+  <p>La base giuridica è il rapporto associativo che nasce con l’iscrizione (art. 6.1.b GDPR) e gli obblighi di legge sulla tenuta del libro soci (art. 6.1.c).</p>
+
+  <h2 class="display h3">Pagamento</h2>
+  <p>La quota si paga su Stripe. I dati della carta li tratta Stripe e noi non li vediamo mai: riceviamo solo la conferma che il pagamento è avvenuto.</p>
+
+  <h2 class="display h3">Dove stanno i dati</h2>
+  <p>I dati sono conservati su Supabase (database), il sito gira su Vercel e le email partono con Resend. Questi fornitori trattano i dati per nostro conto, come responsabili del trattamento. Alcuni hanno sede negli Stati Uniti: in quel caso il trasferimento avviene con le garanzie previste dal GDPR (Data Privacy Framework o clausole contrattuali standard).</p>
+
+  <h2 class="display h3">Per quanto tempo</h2>
+  <p>Finché sei socio e, dopo il recesso, per il tempo richiesto dagli obblighi di legge e fiscali; poi i dati vengono cancellati. Se inizi l’iscrizione ma non paghi la quota, i tuoi dati vengono cancellati entro 90 giorni.</p>
+
+  <h2 class="display h3">I tuoi diritti</h2>
+  <p>Puoi chiedere di vedere, correggere o cancellare i tuoi dati, limitarne il trattamento, riceverli in un formato leggibile od opporti al trattamento, scrivendo all’indirizzo qui sopra. Puoi anche presentare reclamo al Garante per la protezione dei dati personali (garanteprivacy.it).</p>
+
+  <h2 class="display h3">Foto degli eventi</h2>
+  <p>Durante gli eventi scattiamo foto che pubblichiamo negli album del sito. Se compari in una foto e vuoi che la togliamo, scrivici e lo facciamo.</p>
+</Stub>
