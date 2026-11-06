@@ -3,62 +3,36 @@ import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Reg from '../../components/Reg.astro';
-import AlbumCard from '../../components/AlbumCard.astro';
-import { elencoAlbum } from '../../lib/album';
+import EventoScheda from '../../components/EventoScheda.astro';
+import { prossimiEventi } from '../../lib/eventi';
 import { cachePubblica } from '../../lib/sito';
 
 export const prerender = false;
-const album = await elencoAlbum();
+const eventi = await prossimiEventi(Astro.url.searchParams.get('demo'));
 cachePubblica(Astro.response.headers);
 ---
-<Base
-  title="Album degli eventi · PNL Officina Creativa"
-  description="Gli album degli eventi di PNL Officina Creativa: uno per evento, con tutte le foto della serata."
->
+<Base title="Prossimi eventi · PNL Officina Creativa" description="I prossimi eventi di PNL Officina Creativa: date, orari, luoghi e biglietti.">
   <Nav />
-  <main id="contenuto" class="albums">
+  <main id="contenuto" class="evs">
     <div class="wrap">
-      <header class="albums__head">
-        <Reg as="h1" class="display h1" text="Gli album" />
-        <p class="lede">
-          Un album per ogni evento, con tutte le foto della serata. Il più recente è il primo.
-        </p>
+      <header class="evs__head">
+        <Reg as="h1" class="display h1" text="Prossimi eventi" />
       </header>
-
-      {album.length === 0 && <p class="lede">Il primo album arriva dopo il prossimo evento.</p>}
-      <ol class="albums__grid">
-        {album.map((a) => (
-          <li><AlbumCard album={a} headingLevel="h2" sizes="(max-width: 560px) 88vw, (max-width: 1080px) 44vw, 30vw" /></li>
-        ))}
-      </ol>
+      {eventi.length === 0 && (
+        <div class="evs__vuoto">
+          <p class="lede">Nessun evento in programma, per ora. Il prossimo lo annunciamo qui e sui social.</p>
+          <a class="btn btn--paper" href="/album">Guarda le foto di quelli passati</a>
+        </div>
+      )}
+      {eventi.length === 1 && <EventoScheda evento={eventi[0]} grande />}
+      {eventi.length > 1 && eventi.map((e) => <EventoScheda evento={e} />)}
     </div>
   </main>
   <Footer />
 </Base>
 
 <style>
-  .albums { padding-block: clamp(40px, 6vw, 88px) clamp(72px, 10vw, 144px); }
-  .albums__head {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 24px clamp(16px, 2vw, 32px);
-    align-items: end;
-    padding-bottom: clamp(28px, 3.5vw, 48px);
-    margin-bottom: clamp(36px, 5vw, 72px);
-    border-bottom: var(--rule) solid var(--blue);
-  }
-  .albums__head :global(h1) { grid-column: 1 / 8; }
-  .albums__head .lede { grid-column: 8 / 13; }
-  .albums__grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: clamp(36px, 4.5vw, 64px) clamp(24px, 3vw, 48px);
-  }
-  @media (max-width: 1080px) {
-    .albums__head :global(h1), .albums__head .lede { grid-column: 1 / -1; }
-    .albums__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 560px) {
-    .albums__grid { grid-template-columns: 1fr; }
-  }
+  .evs { padding-block: clamp(36px, 5vw, 72px) clamp(72px, 10vw, 144px); }
+  .evs__head { padding-bottom: clamp(28px, 3.5vw, 48px); }
+  .evs__vuoto { display: grid; gap: 28px; justify-items: start; border-top: var(--rule) solid var(--blue); padding-top: 28px; }
 </style>

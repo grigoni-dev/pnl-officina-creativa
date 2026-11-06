@@ -21,7 +21,7 @@ cachePubblica(Astro.response.headers);
   <Nav />
   <main id="contenuto" class="alb">
     <div class="wrap">
-      <a class="link alb__back" href="/eventi">← Tutti gli album</a>
+      <a class="link alb__back" href="/album">← Tutti gli album</a>
 
       <header class="alb__head">
         <Reg as="h1" class="display h1 alb__title" text={a.titolo} />
@@ -45,8 +45,8 @@ cachePubblica(Astro.response.headers);
       </ol>
 
       <nav class="alb__pager" aria-label="Altri album">
-        {piuRecente ? <a class="link" href={`/eventi/${piuRecente.slug}`}>← {piuRecente.titolo}<span class="label"> · più recente</span></a> : <span />}
-        {precedente && <a class="link" href={`/eventi/${precedente.slug}`}>{precedente.titolo}<span class="label"> · precedente</span> →</a>}
+        {piuRecente ? <a class="link" href={`/album/${piuRecente.slug}`}>← {piuRecente.titolo}<span class="label"> · più recente</span></a> : <span />}
+        {precedente && <a class="link" href={`/album/${precedente.slug}`}>{precedente.titolo}<span class="label"> · precedente</span> →</a>}
       </nav>
     </div>
   </main>

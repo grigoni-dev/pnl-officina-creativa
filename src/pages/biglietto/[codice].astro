@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { giornoEvento, orario } from '../../lib/eventi';
+import { qrSvg } from '../../lib/qr';
+import { indirizzoSito } from '../../lib/sito';
+import { supabaseServizio } from '../../lib/supabase';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+// A single ticket, to show at the door. The code in the URL is the ticket:
+// whoever has the link has the ticket, as with the email.
+const codice = (Astro.params.codice ?? '').toLowerCase();
+if (!/^[0-9a-f]{32}$/.test(codice)) return new Response(null, { status: 404 });
+let b: any = null;
+try {
+  const { data } = await supabaseServizio()
+    .from('biglietti')
+    .select('codice, nome, cognome, stato, usato_at, evento:eventi(titolo, slug, inizio, fine, luogo_nome, luogo_indirizzo)')
+    .eq('codice', codice)
+    .maybeSingle();
+  b = data;
+} catch (err) {
+  console.error('biglietto', err);
+}
+if (!b || b.stato === 'in_attesa') return new Response(null, { status: 404 });
+const ev = b.evento;
+const inizio = new Date(ev.inizio), fine = new Date(ev.fine);
+const svg = await qrSvg(`${indirizzoSito(Astro.url)}/biglietto/${codice}`);
+const STATI: Record<string, string> = { valido: 'Valido', usato: 'Già usato', annullato: 'Annullato' };
+---
+<Base title={`Biglietto · ${ev.titolo}`} description="Biglietto PNL Officina Creativa." noindex>
+  <main id="contenuto" class="tk">
+    <div class:list={['tk__card', `tk__card--${b.stato}`]}>
+      <p class="tk__head"><span class="label">PNL · Biglietto</span><span class="label tk__stato">{STATI[b.stato]}</span></p>
+      <h1 class="display tk__titolo">{ev.titolo}</h1>
+      <p class="tk__quando">{giornoEvento(inizio)}, {orario({ inizio, fine })}<br />{ev.luogo_nome}</p>
+      <div class="tk__qr" set:html={svg} />
+      <p class="tk__nome">{b.nome} {b.cognome}</p>
+      {b.stato === 'usato' && <p class="label">Entrato alle {new Date(b.usato_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}</p>}
+      <p class="tk__note">Mostra questo QR all’ingresso. Alza la luminosità dello schermo.</p>
+    </div>
+  </main>
+</Base>
+
+<style>
+  .tk { min-height: 100svh; display: grid; place-items: center; padding: 20px 16px; }
+  .tk__card { width: min(100%, 420px); display: grid; gap: 14px; border: var(--rule) solid var(--blue); background: var(--paper); padding: 20px; }
+  .tk__head { display: flex; justify-content: space-between; border-bottom: var(--rule) solid var(--blue); padding-bottom: 10px; }
+  .tk__stato { background: var(--blue); color: var(--paper); padding: 2px 8px; }
+  .tk__card--usato .tk__stato, .tk__card--annullato .tk__stato { background: var(--pink); color: var(--overprint); }
+  .tk__card--annullato .tk__qr { opacity: 0.25; }
+  .tk__titolo { font-size: var(--step-3); line-height: 0.95; overflow-wrap: anywhere; }
+  .tk__quando { font-weight: 700; }
+  .tk__qr { background: #fff; padding: 12px; border: var(--rule) solid var(--blue); }
+  .tk__qr :global(svg) { width: 100%; height: auto; display: block; }
+  .tk__nome { font-stretch: 125%; font-weight: 900; font-size: var(--step-2); line-height: 1; letter-spacing: -0.03em; }
+  .tk__note { font-size: var(--step--1); font-weight: 600; }
+</style>

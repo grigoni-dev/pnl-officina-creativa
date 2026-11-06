@@ -1,15 +1,18 @@
 import type { APIRoute } from 'astro';
 import type Stripe from 'stripe';
 import { STRIPE_WEBHOOK_SECRET } from 'astro:env/server';
-import { completaPagamento, getStripe } from '../../lib/soci';
+import { completaPagamento, pagamentoScaduto } from '../../lib/pagamenti';
 import { indirizzoSito } from '../../lib/sito';
+import { getStripe } from '../../lib/stripe';
 
 export const prerender = false;
 
 /**
- * Stripe → here when a Checkout is paid (also for delayed methods that settle
- * later). Activates the member and sends the card. Any error answers 500 so
- * Stripe retries; activation and email are idempotent.
+ * Stripe → here. Paid Checkouts activate the member and/or confirm the tickets
+ * and send the emails; expired ones free the seats. Any error answers 500 so
+ * Stripe retries; every step is idempotent.
+ * Events to enable: checkout.session.completed, checkout.session.async_payment_succeeded,
+ * checkout.session.expired.
  */
 export const POST: APIRoute = async ({ request, url }) => {
   if (!STRIPE_WEBHOOK_SECRET) return new Response('webhook non configurato', { status: 500 });
@@ -24,13 +27,15 @@ export const POST: APIRoute = async ({ request, url }) => {
     return new Response('firma non valida', { status: 400 });
   }
 
-  if (evento.type === 'checkout.session.completed' || evento.type === 'checkout.session.async_payment_succeeded') {
-    try {
+  try {
+    if (evento.type === 'checkout.session.completed' || evento.type === 'checkout.session.async_payment_succeeded') {
       await completaPagamento(evento.data.object, indirizzoSito(url));
-    } catch (err) {
-      console.error('webhook attivazione', evento.id, err);
-      return new Response('errore', { status: 500 });
+    } else if (evento.type === 'checkout.session.expired') {
+      await pagamentoScaduto(evento.data.object);
     }
+  } catch (err) {
+    console.error('webhook', evento.type, evento.id, err);
+    return new Response('errore', { status: 500 });
   }
   return new Response('ok');
 };

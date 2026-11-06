@@ -20,33 +20,37 @@
   - Dati: una cartella per album in `src/album/`; istruzioni in testa a `src/data/album.ts`.
   - Gli album `segnaposto-1/2/3` sono provvisori, con foto stock.
 
-## Portale (fatto il 6 novembre, sera)
-- **Stack:** Astro con adapter Vercel. Le pagine con dati vivi girano lato server con cache CDN di 60 secondi; le altre restano statiche.
-- **Supabase:** lo schema è in `supabase/migrations/0001_init.sql`. Contiene:
-  - le tabelle soci, album, foto e admins;
-  - le regole RLS;
-  - le funzioni `attiva_socio` (idempotente), `registra_recesso` e `consuma_limite`;
-  - il bucket `album`;
-  - la pulizia notturna con pg_cron.
-- **Tesseramento** (`/tesseramento`):
-  1. il modulo libro soci (maggiorenni; codice fiscale verificato) salva il socio "in attesa";
-  2. si paga su Stripe Checkout;
-  3. il webhook `/api/stripe-webhook` o la pagina `/tesseramento/grazie`, chi arriva prima, attivano il socio, assegnano il numero e mandano l'email con Resend (`src/lib/email.ts`).
-- **Verifica** (`/verifica?numero=N`): risponde solo attiva, receduta o non trovata, con un massimo di 20 richieste ogni 10 minuti.
-- **Admin** (`/admin`): login Supabase. Album: crea, modifica, pubblica, carica foto con trascinamento (ridimensionate nel browser), sceglie la copertina, elimina. Soci: elenco, ricerca, recesso, export CSV del libro soci.
-- **Album pubblici:** letti da Supabase. Le vecchie cartelle `src/album` e le foto segnaposto degli album sono state tolte.
-- **Privacy:** `/privacy` è una bozza da completare (sede, codice fiscale) e da far verificare.
+## Portale, eventi e biglietti (6–7 novembre)
+Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
+- **Soci:** si riconoscono da email o telefono, non dal numero di tessera. Il telefono è obbligatorio. La lista esistente (Data/Ora, Email, Nome, Cognome, Telefono) si importa da `/admin` → Soci; chi viene importato è segnato "dati incompleti".
+- **Eventi** (`/eventi`, `/eventi/<slug>`, sezione in home):
+  - ognuno ha locandina, data, orari, luogo, accesso pubblico o solo soci, ingresso libero o a pagamento, posti, massimo per ordine;
+  - li gestisce `/admin` → Eventi, dove ci sono anche rimborsi, annullo dell'evento e lista nomi in CSV.
+- **Biglietti** (`/eventi/<slug>/biglietti`):
+  - sono nominativi, con un QR per ognuno per email e la pagina `/biglietto/<codice>`;
+  - negli eventi solo soci ogni biglietto richiede l'email o il telefono di un socio, e chi non è socio paga tessera e biglietto insieme;
+  - i posti restano bloccati 35 minuti mentre si paga;
+  - le prenotazioni gratuite sono confermate subito.
+- **Ingresso** (`/admin/ingresso`): scanner QR dal telefono (jsQR) più ricerca per nome. C'è il ruolo `ingresso`, che vede solo lo scanner.
+- **Album:** spostati su `/album`.
+- **Codice:**
+  - `src/lib/` contiene `soci`, `ordini`, `eventi`, `pagamenti`, `rimborsi`, `contatti`, `email`, `stripe`;
+  - le API admin sono in `src/pages/api/admin/`;
+  - il pannello è in `src/pages/admin/`.
+- **Astro aggiornato alla 7.4.2:** la 5 aveva vulnerabilità critiche. Node 22 su Vercel.
 - **Verifiche fatte:**
-  - migrazione e logica SQL (incluse le RLS) provate su PGlite;
-  - webhook provato con eventi firmati;
-  - pagine e modulo provati senza servizi collegati.
+  - 35 prove SQL su PGlite: posti, doppioni, scanner, ruoli, import, RLS;
+  - webhook con eventi firmati;
+  - QR generato e riletto;
+  - moduli e pagine via HTTP, screenshot desktop e mobile con eventi demo (solo in `npm run dev`).
 
-  **Non provato:** il giro completo con Supabase, Stripe e Resend veri, perché gli account non esistono ancora. Vedi `SETUP.md`, sezione 5.
+  **Non provato:** il giro completo con Supabase, Stripe e Resend veri. Vedi `SETUP.md`, sezione 5.
 
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.
 2. Dominio, per le email (Resend) e per il sito.
 3. Completare e far verificare l'informativa privacy; confermare i campi del libro soci e la regola "solo maggiorenni" con lo statuto.
+4. Sentire il commercialista sui biglietti venduti a chi non è socio (IVA, corrispettivi, SIAE).
 
 ## Materiale che manca dal cliente
 - Il logo (ora c'è un wordmark di solo testo).

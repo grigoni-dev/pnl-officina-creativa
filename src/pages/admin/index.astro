@@ -1,0 +1,861 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="Admin · PNL Officina Creativa" description="Area riservata." noindex>
+  <header class="adm-top">
+    <div class="wrap adm-top__row">
+      <a class="adm-mark" href="/">PNL <span class="label">Admin</span></a>
+      <nav class="adm-tabs" aria-label="Sezioni" hidden>
+        <a href="#eventi" data-tab="eventi">Eventi</a>
+        <a href="#album" data-tab="album">Album</a>
+        <a href="#soci" data-tab="soci">Soci</a>
+        <a href="/admin/ingresso">Ingresso ↗</a>
+      </nav>
+      <button class="adm-esci link" type="button" hidden>Esci</button>
+    </div>
+  </header>
+
+  <main id="contenuto" class="wrap adm">
+    <p class="adm-msg" role="status" aria-live="polite"></p>
+
+    <!-- login -->
+    <section class="adm-view" data-view="login" hidden>
+      <h1 class="display h2">Area riservata</h1>
+      <form class="adm-login">
+        <div class="field"><label for="l-email">Email</label><input id="l-email" name="email" type="email" autocomplete="username" required /></div>
+        <div class="field"><label for="l-pw">Password</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required /></div>
+        <button class="btn" type="submit">Entra</button>
+      </form>
+    </section>
+
+    <section class="adm-view" data-view="config" hidden>
+      <h1 class="display h2">Supabase non collegato</h1>
+      <p class="body">Mancano PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY. Vedi SETUP.md.</p>
+    </section>
+
+    <!-- ================= EVENTI ================= -->
+    <section class="adm-view" data-view="eventi" hidden>
+      <div class="adm-head">
+        <h1 class="display h2">Eventi</h1>
+        <a class="btn" href="#eventi/nuovo">Nuovo evento</a>
+      </div>
+      <ul class="adm-lista adm-eventi"></ul>
+    </section>
+
+    <section class="adm-view" data-view="evento" hidden>
+      <a class="link" href="#eventi">← Tutti gli eventi</a>
+      <form class="adm-card adm-evento">
+        <h2 class="display h3 adm-evento__titolo">Nuovo evento</h2>
+        <div class="adm-fields">
+          <div class="field field--wide"><label for="e-titolo">Titolo</label><input id="e-titolo" name="titolo" required maxlength="120" /></div>
+          <div class="field"><label for="e-data">Data</label><input id="e-data" name="data" type="date" required /></div>
+          <div class="field"><label for="e-inizio">Ora di inizio</label><input id="e-inizio" name="ora_inizio" type="time" required /></div>
+          <div class="field"><label for="e-fine">Ora di fine</label><input id="e-fine" name="ora_fine" type="time" required /><p class="field__hint">Se è prima dell’inizio, vale il giorno dopo</p></div>
+          <div class="field"><label for="e-luogo">Luogo</label><input id="e-luogo" name="luogo_nome" required maxlength="120" /></div>
+          <div class="field field--wide"><label for="e-ind">Indirizzo (per la mappa)</label><input id="e-ind" name="luogo_indirizzo" maxlength="200" /></div>
+          <div class="field field--wide"><label for="e-descr">Descrizione</label><textarea id="e-descr" name="descrizione" rows="7" maxlength="5000"></textarea><p class="field__hint">Una riga vuota per andare a capo con un nuovo paragrafo</p></div>
+          <div class="field">
+            <label for="e-accesso">Accesso</label>
+            <select id="e-accesso" name="accesso"><option value="pubblico">Aperto a tutti</option><option value="soci">Solo soci</option></select>
+          </div>
+          <div class="field">
+            <label for="e-ingresso">Ingresso</label>
+            <select id="e-ingresso" name="ingresso"><option value="pagamento">A pagamento</option><option value="libero">Libero</option></select>
+          </div>
+          <div class="field" data-se="pagamento"><label for="e-prezzo">Prezzo (€)</label><input id="e-prezzo" name="prezzo" type="number" min="0.5" step="0.5" inputmode="decimal" /></div>
+          <label class="check" data-se="libero"><input type="checkbox" name="prenotazione" /> <span>Serve la prenotazione (gratuita, con QR)</span></label>
+          <div class="field"><label for="e-posti">Posti (vuoto = senza limite)</label><input id="e-posti" name="posti" type="number" min="1" step="1" /></div>
+          <div class="field"><label for="e-max">Massimo biglietti per ordine</label><input id="e-max" name="max_per_ordine" type="number" min="1" max="20" value="6" required /></div>
+          <div class="field"><label for="e-vendite">Vendita aperta fino a</label><input id="e-vendite" name="vendite_fino_a" type="datetime-local" /><p class="field__hint">Vuoto = fino all’inizio dell’evento</p></div>
+          <div class="field">
+            <label for="e-album">Album delle foto (dopo l’evento)</label>
+            <select id="e-album" name="album_id"><option value="">Nessuno</option></select>
+          </div>
+        </div>
+
+        <div class="adm-locandina">
+          <div class="adm-locandina__img" aria-hidden="true"></div>
+          <div>
+            <p class="label">Locandina</p>
+            <label class="link" for="e-file">Carica un’immagine</label>
+            <input id="e-file" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" />
+            <p class="field__hint">Verticale va benissimo. Viene ridimensionata prima del caricamento.</p>
+          </div>
+        </div>
+
+        <div class="adm-actions">
+          <button class="btn" type="submit" name="azione" value="bozza">Salva come bozza</button>
+          <button class="btn btn--paper" type="submit" name="azione" value="pubblicato">Salva e pubblica</button>
+          <a class="link adm-vedi-evento" target="_blank" hidden>Vedi sul sito ↗</a>
+        </div>
+      </form>
+
+      <section class="adm-vendite" hidden>
+        <div class="adm-head">
+          <h2 class="display h3">Biglietti</h2>
+          <div class="adm-actions">
+            <button class="btn btn--paper adm-csv-ingresso" type="button">Lista nomi (CSV)</button>
+            <button class="link adm-annulla-evento" type="button">Annulla evento e rimborsa tutti</button>
+          </div>
+        </div>
+        <dl class="adm-numeri"></dl>
+        <div class="field adm-cerca-ordini"><label for="o-cerca">Cerca</label><input id="o-cerca" type="search" placeholder="Nome, email, telefono" /></div>
+        <ul class="adm-ordini"></ul>
+      </section>
+    </section>
+
+    <!-- ================= ALBUM ================= -->
+    <section class="adm-view" data-view="album" hidden>
+      <div class="adm-head"><h1 class="display h2">Album</h1></div>
+      <form class="adm-card adm-nuovo">
+        <h2 class="display h3">Nuovo album</h2>
+        <div class="adm-fields">
+          <div class="field"><label for="n-titolo">Titolo</label><input id="n-titolo" name="titolo" required maxlength="120" /></div>
+          <div class="field"><label for="n-data">Data dell’evento</label><input id="n-data" name="data" type="date" required /></div>
+          <div class="field"><label for="n-luogo">Luogo (facoltativo)</label><input id="n-luogo" name="luogo" maxlength="120" /></div>
+        </div>
+        <button class="btn" type="submit">Crea album</button>
+      </form>
+      <ul class="adm-lista adm-albums"></ul>
+    </section>
+
+    <section class="adm-view" data-view="album-uno" hidden>
+      <a class="link" href="#album">← Tutti gli album</a>
+      <form class="adm-card adm-meta">
+        <div class="adm-fields">
+          <div class="field"><label for="m-titolo">Titolo</label><input id="m-titolo" name="titolo" required maxlength="120" /></div>
+          <div class="field"><label for="m-data">Data</label><input id="m-data" name="data" type="date" required /></div>
+          <div class="field"><label for="m-luogo">Luogo</label><input id="m-luogo" name="luogo" maxlength="120" /></div>
+          <div class="field field--wide"><label for="m-descr">Descrizione (facoltativa)</label><input id="m-descr" name="descrizione" maxlength="300" /></div>
+        </div>
+        <label class="check"><input type="checkbox" name="pubblicato" /> <span>Pubblicato: visibile sul sito</span></label>
+        <div class="adm-actions">
+          <button class="btn" type="submit">Salva</button>
+          <a class="link adm-vedi" target="_blank">Vedi sul sito ↗</a>
+          <button class="link adm-elimina-album" type="button">Elimina album</button>
+        </div>
+      </form>
+      <div class="adm-drop" tabindex="0">
+        <p class="display h3">Trascina qui le foto</p>
+        <p>oppure <label class="link" for="file">scegli dal computer</label>. JPG, PNG o WebP: vengono ridimensionate prima di caricarle.</p>
+        <input id="file" type="file" accept="image/jpeg,image/png,image/webp" multiple class="sr-only" />
+        <progress class="adm-progress" max="1" value="0" hidden></progress>
+        <p class="adm-progress-txt label"></p>
+      </div>
+      <p class="adm-conteggio label"></p>
+      <ol class="adm-foto"></ol>
+    </section>
+
+    <!-- ================= SOCI ================= -->
+    <section class="adm-view" data-view="soci" hidden>
+      <div class="adm-head">
+        <h1 class="display h2">Soci</h1>
+        <div class="adm-actions">
+          <label class="btn btn--paper" for="import-file">Importa lista (Excel o CSV)</label>
+          <input id="import-file" type="file" accept=".xlsx,.csv,text/csv" class="sr-only" />
+          <button class="btn btn--paper adm-csv" type="button">Scarica libro soci (CSV)</button>
+        </div>
+      </div>
+
+      <div class="adm-card adm-import" hidden>
+        <h2 class="display h3">Importa soci</h2>
+        <p class="body adm-import__info"></p>
+        <div class="adm-tab-wrap"><table class="adm-tab adm-import__anteprima"></table></div>
+        <div class="adm-actions">
+          <button class="btn adm-import__ok" type="button">Importa</button>
+          <button class="link adm-import__annulla" type="button">Annulla</button>
+        </div>
+        <div class="adm-import__esito body"></div>
+      </div>
+
+      <div class="adm-filtri">
+        <div class="field"><label for="s-cerca">Cerca</label><input id="s-cerca" type="search" placeholder="Nome, email, telefono, codice fiscale, numero" /></div>
+        <div class="field">
+          <label for="s-stato">Stato</label>
+          <select id="s-stato">
+            <option value="attivo">Attivi</option>
+            <option value="in_attesa">In attesa di pagamento</option>
+            <option value="receduto">Receduti</option>
+            <option value="">Tutti</option>
+          </select>
+        </div>
+        <label class="check"><input type="checkbox" id="s-incompleti" /> <span>Solo dati incompleti</span></label>
+      </div>
+      <p class="adm-conteggio-soci label"></p>
+      <div class="adm-tab-wrap">
+        <table class="adm-tab adm-soci">
+          <thead><tr><th>N°</th><th>Nome</th><th>Email</th><th>Telefono</th><th>Stato</th><th>Dal</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import { readSheet } from 'read-excel-file/browser';
+  import {
+    $, api, configurato, esc, euro, fallito, giorno, login, msg, ridimensiona, ruolo, sb, scaricaCsv, slugDa, urlPubblico,
+  } from '../../scripts/admin-comune';
+
+  const mostra = (view: string) => {
+    document.querySelectorAll<HTMLElement>('.adm-view').forEach((v) => (v.hidden = v.dataset.view !== view));
+    document.querySelectorAll<HTMLElement>('[data-tab]').forEach((t) => t.toggleAttribute('aria-current', view.startsWith(t.dataset.tab!)));
+  };
+  const val = (form: HTMLFormElement, n: string) => (form.elements.namedItem(n) as HTMLInputElement);
+
+  /* ================= session & routing ================= */
+  const entra = async () => {
+    const r = await ruolo();
+    $('.adm-tabs').hidden = r !== 'admin';
+    $('.adm-esci').hidden = !r;
+    if (!r) return mostra('login');
+    if (r === 'ingresso') return location.replace('/admin/ingresso');
+    route();
+  };
+  const route = () => {
+    const [view, id] = location.hash.replace('#', '').split('/');
+    if (view === 'soci') return caricaSoci();
+    if (view === 'album' && id) return apriAlbum(id);
+    if (view === 'album') return elencoAlbum();
+    if (view === 'eventi' && id) return apriEvento(id);
+    return elencoEventi();
+  };
+
+  if (!configurato) mostra('config');
+  else {
+    $('.adm-login').addEventListener('submit', async (e) => { e.preventDefault(); if (await login(e.target as HTMLFormElement)) entra(); });
+    $('.adm-esci').addEventListener('click', async () => { await sb.auth.signOut(); location.hash = ''; entra(); });
+    addEventListener('hashchange', () => sb.auth.getSession().then(({ data }) => data.session && route()));
+    entra();
+  }
+
+  /* ================= EVENTI ================= */
+  type Evento = Record<string, any>;
+  let evento: Evento | null = null;
+  let ordini: any[] = [];
+
+  const elencoEventi = async () => {
+    mostra('eventi');
+    const { data, error } = await sb.from('eventi').select('id, titolo, data, ora_inizio, stato, posti, accesso, ingresso, prezzo_cent').order('data', { ascending: false });
+    if (fallito(error, 'Eventi')) return;
+    const oggi = new Date().toISOString().slice(0, 10);
+    $('.adm-eventi').innerHTML = (data ?? []).map((e) => `
+      <li><a href="#eventi/${e.id}" class="adm-riga">
+        <strong>${esc(e.titolo)}</strong>
+        <span class="label">${giorno(e.data)} · ${e.ora_inizio.slice(0, 5)} · ${e.ingresso === 'libero' ? 'libero' : euro(e.prezzo_cent)} · ${e.accesso === 'soci' ? 'solo soci' : 'pubblico'}${e.data < oggi ? ' · passato' : ''}</span>
+        <span class="adm-badge ${e.stato === 'pubblicato' ? 'is-on' : e.stato === 'annullato' ? 'is-ko' : ''}">${{ bozza: 'Bozza', pubblicato: 'Pubblicato', annullato: 'Annullato' }[e.stato as string]}</span>
+      </a></li>`).join('') || '<li class="body">Nessun evento ancora.</li>';
+  };
+
+  const formEvento = $<HTMLFormElement>('.adm-evento');
+  const aggiornaIngresso = () => {
+    const ing = val(formEvento, 'ingresso').value;
+    formEvento.querySelectorAll<HTMLElement>('[data-se]').forEach((el) => (el.hidden = el.dataset.se !== ing));
+  };
+  formEvento.addEventListener('change', aggiornaIngresso);
+
+  const caricaAlbumSelect = async (scelto: string | null) => {
+    const { data } = await sb.from('album').select('id, titolo, data').order('data', { ascending: false });
+    $('#e-album').innerHTML = '<option value="">Nessuno</option>' + (data ?? []).map((a) => `<option value="${a.id}" ${a.id === scelto ? 'selected' : ''}>${esc(a.titolo)} · ${giorno(a.data)}</option>`).join('');
+  };
+
+  const locale = (iso: string | null) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+
+  const apriEvento = async (id: string) => {
+    mostra('evento');
+    formEvento.reset();
+    evento = null;
+    $('.adm-locandina__img').innerHTML = '';
+    $('.adm-vendite').hidden = true;
+    $<HTMLAnchorElement>('.adm-vedi-evento').hidden = true;
+    if (id === 'nuovo') {
+      $('.adm-evento__titolo').textContent = 'Nuovo evento';
+      await caricaAlbumSelect(null);
+      return aggiornaIngresso();
+    }
+    const { data, error } = await sb.from('eventi').select('*').eq('id', id).single();
+    if (fallito(error, 'Evento')) return;
+    evento = data;
+    $('.adm-evento__titolo').textContent = data.titolo;
+    for (const k of ['titolo', 'data', 'luogo_nome', 'luogo_indirizzo', 'descrizione', 'accesso', 'ingresso', 'posti', 'max_per_ordine']) {
+      val(formEvento, k).value = data[k] ?? '';
+    }
+    val(formEvento, 'ora_inizio').value = data.ora_inizio.slice(0, 5);
+    val(formEvento, 'ora_fine').value = data.ora_fine.slice(0, 5);
+    val(formEvento, 'prezzo').value = data.prezzo_cent ? String(data.prezzo_cent / 100) : '';
+    val(formEvento, 'prenotazione').checked = data.prenotazione;
+    val(formEvento, 'vendite_fino_a').value = locale(data.vendite_fino_a);
+    await caricaAlbumSelect(data.album_id);
+    aggiornaIngresso();
+    if (data.locandina_path) {
+      $('.adm-locandina__img').innerHTML = `<img src="${urlPubblico('locandine', data.locandina_path)}" alt="" />`;
+    }
+    const vedi = $<HTMLAnchorElement>('.adm-vedi-evento');
+    vedi.href = `/eventi/${data.slug}`;
+    vedi.hidden = data.stato === 'bozza';
+    await caricaOrdini();
+  };
+
+  formEvento.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const stato = ((e as SubmitEvent).submitter as HTMLButtonElement | null)?.value ?? 'bozza';
+    const f = new FormData(formEvento);
+    const s = (k: string) => String(f.get(k) ?? '').trim();
+    const ingresso = s('ingresso');
+    const riga: Record<string, unknown> = {
+      titolo: s('titolo'), data: s('data'), ora_inizio: s('ora_inizio'), ora_fine: s('ora_fine'),
+      luogo_nome: s('luogo_nome'), luogo_indirizzo: s('luogo_indirizzo') || null, descrizione: s('descrizione') || null,
+      accesso: s('accesso'), ingresso,
+      prezzo_cent: ingresso === 'pagamento' ? Math.round(Number(s('prezzo').replace(',', '.')) * 100) || null : null,
+      prenotazione: ingresso === 'libero' && f.get('prenotazione') === 'on',
+      posti: s('posti') ? Number(s('posti')) : null,
+      max_per_ordine: Number(s('max_per_ordine')) || 6,
+      vendite_fino_a: s('vendite_fino_a') ? new Date(s('vendite_fino_a')).toISOString() : null,
+      album_id: s('album_id') || null,
+      stato: evento?.stato === 'annullato' ? 'annullato' : stato,
+    };
+    if (ingresso === 'pagamento' && !riga.prezzo_cent) return msg('Per un evento a pagamento serve il prezzo (minimo 0,50 €).', true);
+    if (evento) {
+      const { error } = await sb.from('eventi').update(riga).eq('id', evento.id);
+      if (fallito(error, 'Salvataggio')) return;
+      msg(stato === 'pubblicato' ? 'Evento salvato e pubblicato. Sul sito si aggiorna entro un minuto.' : 'Evento salvato.');
+      apriEvento(evento.id);
+    } else {
+      let slug = slugDa(String(riga.titolo), String(riga.data));
+      const { data: c } = await sb.from('eventi').select('id').eq('slug', slug).maybeSingle();
+      if (c) slug += `-${Math.random().toString(36).slice(2, 6)}`;
+      const { data, error } = await sb.from('eventi').insert({ ...riga, slug }).select('id').single();
+      if (fallito(error, 'Creazione')) return;
+      msg('Evento creato.');
+      location.hash = `eventi/${data!.id}`;
+    }
+  });
+
+  $('#e-file').addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!evento) return msg('Salva prima l’evento, poi carica la locandina.', true);
+    try {
+      const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const r = await ridimensiona(bmp, 1800, 0.85);
+      bmp.close();
+      const path = `${evento.id}/${crypto.randomUUID()}.${r.ext}`;
+      const up = await sb.storage.from('locandine').upload(path, r.blob, { contentType: r.blob.type, cacheControl: '31536000' });
+      if (fallito(up.error, 'Caricamento locandina')) return;
+      const vecchia = evento.locandina_path;
+      const { error } = await sb.from('eventi').update({ locandina_path: path, locandina_width: r.w, locandina_height: r.h }).eq('id', evento.id);
+      if (fallito(error, 'Locandina')) return;
+      if (vecchia) await sb.storage.from('locandine').remove([vecchia]);
+      msg('Locandina caricata.');
+      apriEvento(evento.id);
+    } catch (err) {
+      msg('Non riesco a leggere questa immagine. Prova con un JPG o PNG.', true);
+    }
+  });
+
+  /* ---- orders ---- */
+  const STATO_ORDINE: Record<string, string> = { confermato: 'Pagato', rimborsato: 'Rimborsato', annullato: 'Annullato' };
+
+  const caricaOrdini = async () => {
+    if (!evento) return;
+    const { data, error } = await sb
+      .from('ordini')
+      .select('id, nome, cognome, email, telefono, n_biglietti, importo_cent, quota_cent, stato, created_at, biglietti(id, nome, cognome, stato, usato_at)')
+      .eq('evento_id', evento.id)
+      .in('stato', ['confermato', 'rimborsato', 'annullato'])
+      .order('created_at', { ascending: false });
+    if (fallito(error, 'Ordini')) return;
+    ordini = data ?? [];
+    $('.adm-vendite').hidden = false;
+    const conf = ordini.filter((o) => o.stato === 'confermato');
+    const tutti = conf.flatMap((o) => o.biglietti).filter((b: any) => b.stato === 'valido' || b.stato === 'usato');
+    const entrati = tutti.filter((b: any) => b.stato === 'usato').length;
+    const incasso = conf.reduce((s, o) => s + o.importo_cent, 0);
+    $('.adm-numeri').innerHTML = `
+      <div><dt class="label">Biglietti</dt><dd class="display">${tutti.length}${evento.posti ? ` <small>/ ${evento.posti}</small>` : ''}</dd></div>
+      <div><dt class="label">Entrati</dt><dd class="display">${entrati}</dd></div>
+      <div><dt class="label">Incasso biglietti</dt><dd class="display">${euro(incasso)}</dd></div>
+      <div><dt class="label">Ordini</dt><dd class="display">${conf.length}</dd></div>`;
+    $<HTMLButtonElement>('.adm-annulla-evento').hidden = evento.stato === 'annullato';
+    disegnaOrdini();
+  };
+
+  const disegnaOrdini = () => {
+    const q = $<HTMLInputElement>('#o-cerca').value.trim().toLowerCase();
+    const righe = ordini.filter((o) => !q || [o.nome, o.cognome, o.email, o.telefono, ...o.biglietti.map((b: any) => `${b.nome} ${b.cognome}`)].join(' ').toLowerCase().includes(q));
+    $('.adm-ordini').innerHTML = righe.map((o) => `
+      <li class="adm-ordine">
+        <div class="adm-ordine__head">
+          <strong>${esc(o.nome)} ${esc(o.cognome)}</strong>
+          <span class="label">${esc(o.email)} · ${esc(o.telefono)} · ${giorno(o.created_at)}</span>
+          <span class="adm-badge ${o.stato === 'confermato' ? 'is-on' : 'is-ko'}">${STATO_ORDINE[o.stato]}</span>
+          <span class="label">${o.importo_cent ? euro(o.importo_cent) : 'gratis'}${o.quota_cent ? ' + tessera' : ''}</span>
+          ${o.stato === 'confermato' ? `<button type="button" class="link" data-rimborsa="${o.id}">${o.importo_cent ? 'Rimborsa' : 'Annulla'}</button>` : ''}
+        </div>
+        <ul class="adm-ordine__b">${o.biglietti.map((b: any) => `
+          <li><span>${esc(b.nome)} ${esc(b.cognome)}</span>
+            <span class="label">${b.stato === 'usato' ? `entrato ${new Date(b.usato_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : b.stato}</span>
+            ${b.stato === 'valido' ? `<button type="button" class="link" data-annulla-b="${b.id}">Annulla biglietto</button>` : ''}
+          </li>`).join('')}
+        </ul>
+      </li>`).join('') || '<li class="body">Nessun biglietto venduto, per ora.</li>';
+  };
+  $('#o-cerca').addEventListener('input', disegnaOrdini);
+
+  $('.adm-ordini').addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    if (t.dataset.rimborsa) {
+      const o = ordini.find((x) => x.id === t.dataset.rimborsa);
+      const quanto = o.importo_cent ? `rimborsare ${euro(o.importo_cent)} a` : 'annullare la prenotazione di';
+      if (!confirm(`Vuoi ${quanto} ${o.nome} ${o.cognome}? I suoi ${o.n_biglietti} biglietti smettono di valere.${o.quota_cent ? ' La tessera resta valida.' : ''}`)) return;
+      try {
+        const r = await api('/api/admin/rimborso', { ordine_id: o.id });
+        msg(r.esito === 'rimborsato' ? 'Rimborso fatto. Stripe accredita entro 5–10 giorni.' : 'Prenotazione annullata.');
+      } catch (err) {
+        return msg(`Rimborso non riuscito: ${(err as Error).message}`, true);
+      }
+      caricaOrdini();
+    }
+    if (t.dataset.annullaB) {
+      if (!confirm('Annullare questo biglietto? Il QR smette di valere. Non viene rimborsato.')) return;
+      const { error } = await sb.rpc('annulla_biglietto', { p_biglietto: t.dataset.annullaB });
+      if (fallito(error, 'Annullamento')) return;
+      caricaOrdini();
+    }
+  });
+
+  $('.adm-annulla-evento').addEventListener('click', async () => {
+    if (!evento) return;
+    const conf = ordini.filter((o) => o.stato === 'confermato');
+    if (!confirm(`Annullare “${evento.titolo}”? Sul sito comparirà come annullato e verranno rimborsati tutti i ${conf.length} ordini pagati. Non si può tornare indietro.`)) return;
+    try {
+      const r = await api('/api/admin/annulla-evento', { evento_id: evento.id });
+      msg(`Evento annullato. Rimborsati ${r.rimborsati} ordini, annullate ${r.annullati} prenotazioni${r.falliti.length ? `. Non riusciti: ${r.falliti.length}, riprova da “Rimborsa”` : ''}.`, r.falliti.length > 0);
+    } catch (err) {
+      return msg(`Annullamento non riuscito: ${(err as Error).message}`, true);
+    }
+    apriEvento(evento.id);
+  });
+
+  $('.adm-csv-ingresso').addEventListener('click', () => {
+    if (!evento) return;
+    const righe = ordini.filter((o) => o.stato === 'confermato').flatMap((o) =>
+      o.biglietti.filter((b: any) => b.stato !== 'annullato').map((b: any) => ({ cognome: b.cognome, nome: b.nome, stato: b.stato, acquistato_da: `${o.nome} ${o.cognome}`, telefono: o.telefono })));
+    righe.sort((a, b) => a.cognome.localeCompare(b.cognome, 'it'));
+    scaricaCsv(`ingresso-${evento.slug}.csv`, ['cognome', 'nome', 'stato', 'acquistato_da', 'telefono'], righe);
+  });
+
+  /* ================= ALBUM ================= */
+  type Album = { id: string; slug: string; titolo: string; data: string; luogo: string | null; descrizione: string | null; pubblicato: boolean; copertina_id: string | null; foto: { count: number }[] };
+  type Foto = { id: string; path: string; thumb_path: string; ordine: number };
+  let corrente: Album | null = null;
+  let fotoCorrenti: Foto[] = [];
+
+  const elencoAlbum = async () => {
+    mostra('album');
+    const { data, error } = await sb.from('album').select('*, foto:foto!foto_album_id_fkey(count)').order('data', { ascending: false });
+    if (fallito(error, 'Caricamento album')) return;
+    $('.adm-albums').innerHTML = (data as Album[]).map((a) => `
+      <li><a href="#album/${a.id}" class="adm-riga">
+        <strong>${esc(a.titolo)}</strong>
+        <span class="label">${giorno(a.data)} · ${a.foto[0]?.count ?? 0} foto</span>
+        <span class="adm-badge ${a.pubblicato ? 'is-on' : ''}">${a.pubblicato ? 'Pubblicato' : 'Bozza'}</span>
+      </a></li>`).join('') || '<li class="body">Nessun album ancora. Creane uno qui sopra.</li>';
+  };
+
+  $('.adm-nuovo').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const f = new FormData(form);
+    const titolo = String(f.get('titolo')).trim();
+    const data = String(f.get('data'));
+    let slug = slugDa(titolo, data);
+    const { data: esiste } = await sb.from('album').select('id').eq('slug', slug).maybeSingle();
+    if (esiste) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+    const { data: nuovo, error } = await sb.from('album').insert({ titolo, data, luogo: String(f.get('luogo')).trim() || null, slug }).select('id').single();
+    if (fallito(error, 'Creazione album')) return;
+    form.reset();
+    location.hash = `album/${nuovo!.id}`;
+  });
+
+  const apriAlbum = async (id: string) => {
+    mostra('album-uno');
+    const { data, error } = await sb.from('album').select('*, foto:foto!foto_album_id_fkey(count)').eq('id', id).single();
+    if (fallito(error, 'Album')) return;
+    corrente = data as Album;
+    const form = $<HTMLFormElement>('.adm-meta');
+    val(form, 'titolo').value = corrente.titolo;
+    val(form, 'data').value = corrente.data;
+    val(form, 'luogo').value = corrente.luogo ?? '';
+    val(form, 'descrizione').value = corrente.descrizione ?? '';
+    val(form, 'pubblicato').checked = corrente.pubblicato;
+    $<HTMLAnchorElement>('.adm-vedi').href = `/album/${corrente.slug}`;
+    await caricaFoto();
+  };
+
+  const caricaFoto = async () => {
+    if (!corrente) return;
+    const { data, error } = await sb.from('foto').select('id, path, thumb_path, ordine').eq('album_id', corrente.id).order('ordine').order('created_at');
+    if (fallito(error, 'Foto')) return;
+    fotoCorrenti = data as Foto[];
+    $('.adm-conteggio').textContent = `${fotoCorrenti.length} foto`;
+    $('.adm-foto').innerHTML = fotoCorrenti.map((f) => `
+      <li class="${f.id === corrente!.copertina_id ? 'is-cover' : ''}">
+        <img src="${urlPubblico('album', f.thumb_path)}" alt="" loading="lazy" />
+        <div class="adm-foto__az">
+          ${f.id === corrente!.copertina_id ? '<span class="label">Copertina</span>' : `<button type="button" class="link" data-cover="${f.id}">Copertina</button>`}
+          <button type="button" class="link" data-del="${f.id}">Elimina</button>
+        </div>
+      </li>`).join('');
+  };
+
+  $('.adm-meta').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!corrente) return;
+    const f = new FormData(e.target as HTMLFormElement);
+    const { error } = await sb.from('album').update({
+      titolo: String(f.get('titolo')).trim(),
+      data: String(f.get('data')),
+      luogo: String(f.get('luogo')).trim() || null,
+      descrizione: String(f.get('descrizione')).trim() || null,
+      pubblicato: f.get('pubblicato') === 'on',
+    }).eq('id', corrente.id);
+    if (fallito(error, 'Salvataggio')) return;
+    msg('Album salvato. Sul sito si aggiorna entro un minuto.');
+  });
+
+  $('.adm-foto').addEventListener('click', async (e) => {
+    const t = e.target as HTMLElement;
+    if (!corrente) return;
+    if (t.dataset.cover) {
+      const { error } = await sb.from('album').update({ copertina_id: t.dataset.cover }).eq('id', corrente.id);
+      if (fallito(error, 'Copertina')) return;
+      corrente.copertina_id = t.dataset.cover;
+      caricaFoto();
+    }
+    if (t.dataset.del) {
+      const f = fotoCorrenti.find((x) => x.id === t.dataset.del);
+      if (!f || !confirm('Eliminare questa foto?')) return;
+      const { error } = await sb.from('foto').delete().eq('id', f.id);
+      if (fallito(error, 'Eliminazione')) return;
+      await sb.storage.from('album').remove([f.path, f.thumb_path]);
+      if (corrente.copertina_id === f.id) corrente.copertina_id = null;
+      caricaFoto();
+    }
+  });
+
+  $('.adm-elimina-album').addEventListener('click', async () => {
+    if (!corrente) return;
+    if (!confirm(`Eliminare l’album “${corrente.titolo}” e tutte le sue ${fotoCorrenti.length} foto? Non si può annullare.`)) return;
+    const percorsi = fotoCorrenti.flatMap((f) => [f.path, f.thumb_path]);
+    for (let i = 0; i < percorsi.length; i += 900) await sb.storage.from('album').remove(percorsi.slice(i, i + 900));
+    const { error } = await sb.from('album').delete().eq('id', corrente.id);
+    if (fallito(error, 'Eliminazione album')) return;
+    msg('Album eliminato.');
+    location.hash = 'album';
+  });
+
+  const carica = async (files: File[]) => {
+    if (!corrente || !files.length) return;
+    const album = corrente;
+    files.sort((a, b) => a.name.localeCompare(b.name, 'it', { numeric: true }));
+    const base = fotoCorrenti.reduce((m, f) => Math.max(m, f.ordine), 0) + 1;
+    const prog = $<HTMLProgressElement>('.adm-progress');
+    const txt = $('.adm-progress-txt');
+    prog.hidden = false; prog.max = files.length; prog.value = 0;
+    const falliti: string[] = [];
+    let primo: string | null = null;
+    let primoIdx = Infinity;
+    let prossimo = 0;
+    const lavora = async () => {
+      while (prossimo < files.length) {
+        const i = prossimo++;
+        const file = files[i];
+        try {
+          const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+          const [g, t] = [await ridimensiona(bmp, 2048, 0.82), await ridimensiona(bmp, 640, 0.72)];
+          bmp.close();
+          const id = crypto.randomUUID();
+          const path = `${album.id}/${id}.${g.ext}`, thumb = `${album.id}/${id}-t.${t.ext}`;
+          const opt = { cacheControl: '31536000', upsert: false };
+          const [u1, u2] = await Promise.all([
+            sb.storage.from('album').upload(path, g.blob, { ...opt, contentType: g.blob.type }),
+            sb.storage.from('album').upload(thumb, t.blob, { ...opt, contentType: t.blob.type }),
+          ]);
+          if (u1.error || u2.error) throw u1.error ?? u2.error;
+          const { data: riga, error } = await sb.from('foto').insert({
+            album_id: album.id, path, thumb_path: thumb, width: g.w, height: g.h, thumb_width: t.w, thumb_height: t.h, ordine: base + i,
+          }).select('id').single();
+          if (error) throw error;
+          if (i < primoIdx) { primoIdx = i; primo = riga.id; }
+        } catch (err) {
+          console.error(file.name, err);
+          falliti.push(file.name);
+        }
+        prog.value += 1;
+        txt.textContent = `${prog.value} di ${files.length}`;
+      }
+    };
+    await Promise.all([lavora(), lavora(), lavora()]);
+    if (!album.copertina_id && primo) {
+      await sb.from('album').update({ copertina_id: primo }).eq('id', album.id);
+      album.copertina_id = primo;
+    }
+    prog.hidden = true;
+    txt.textContent = '';
+    msg(falliti.length
+      ? `Caricate ${files.length - falliti.length} foto. Non riuscite: ${falliti.join(', ')} (le HEIC dell’iPhone vanno prima convertite in JPG).`
+      : `Caricate ${files.length} foto.`, falliti.length > 0);
+    caricaFoto();
+  };
+
+  const drop = $('.adm-drop');
+  $<HTMLInputElement>('#file').addEventListener('change', (e) => {
+    const input = e.target as HTMLInputElement;
+    carica([...(input.files ?? [])]);
+    input.value = '';
+  });
+  drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('is-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  drop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    drop.classList.remove('is-over');
+    carica([...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/')));
+  });
+
+  /* ================= SOCI ================= */
+  let soci: Record<string, any>[] = [];
+  const STATI: Record<string, string> = { attivo: 'Attivo', in_attesa: 'In attesa', receduto: 'Receduto' };
+
+  const caricaSoci = async () => {
+    mostra('soci');
+    const { data, error } = await sb.from('soci').select('*').order('numero', { ascending: true, nullsFirst: false }).order('created_at');
+    if (fallito(error, 'Soci')) return;
+    soci = data ?? [];
+    disegnaSoci();
+  };
+
+  const disegnaSoci = () => {
+    const q = $<HTMLInputElement>('#s-cerca').value.trim().toLowerCase();
+    const st = $<HTMLSelectElement>('#s-stato').value;
+    const inc = $<HTMLInputElement>('#s-incompleti').checked;
+    const righe = soci.filter((s) => (!st || s.stato === st) && (!inc || !s.dati_completi) &&
+      (!q || [s.nome, s.cognome, s.email, s.telefono, s.codice_fiscale, s.numero].join(' ').toLowerCase().includes(q)));
+    $('.adm-conteggio-soci').textContent = `${righe.length} su ${soci.length}`;
+    $('.adm-soci tbody').innerHTML = righe.map((s) => `
+      <tr>
+        <td>${s.numero ?? '—'}</td>
+        <td>${esc(s.nome)} ${esc(s.cognome)}${s.dati_completi ? '' : ' <span class="adm-badge">dati incompleti</span>'}</td>
+        <td>${esc(s.email ?? '—')}</td>
+        <td>${esc(s.telefono ?? '—')}</td>
+        <td><span class="adm-badge ${s.stato === 'attivo' ? 'is-on' : ''}">${STATI[s.stato]}</span></td>
+        <td>${giorno(s.iscritto_at)}</td>
+        <td>${s.stato === 'attivo' ? `<button type="button" class="link" data-recesso="${s.id}">Registra recesso</button>` : ''}</td>
+      </tr>`).join('') || '<tr><td colspan="7">Nessun socio.</td></tr>';
+  };
+  $('#s-cerca').addEventListener('input', disegnaSoci);
+  $('#s-stato').addEventListener('change', disegnaSoci);
+  $('#s-incompleti').addEventListener('change', disegnaSoci);
+
+  $('.adm-soci').addEventListener('click', async (e) => {
+    const id = (e.target as HTMLElement).dataset.recesso;
+    const s = soci.find((x) => x.id === id);
+    if (!s || !confirm(`Registrare il recesso di ${s.nome} ${s.cognome} (tessera N° ${s.numero})?`)) return;
+    const { error } = await sb.rpc('registra_recesso', { p_socio: s.id });
+    if (fallito(error, 'Recesso')) return;
+    msg('Recesso registrato.');
+    caricaSoci();
+  });
+
+  $('.adm-csv').addEventListener('click', () => {
+    const col = ['numero', 'stato', 'cognome', 'nome', 'email', 'telefono', 'data_nascita', 'luogo_nascita', 'codice_fiscale', 'indirizzo', 'cap', 'comune', 'provincia', 'iscritto_at', 'receduto_at', 'origine', 'dati_completi'];
+    scaricaCsv(`libro-soci-${new Date().toISOString().slice(0, 10)}.csv`, col, soci.filter((s) => s.stato !== 'in_attesa'));
+  });
+
+  /* ---- import (LOGICHE.md §1): columns Data/Ora, Email, Nome, Cognome, Telefono ---- */
+  type RigaImport = { riga: number; nome: string; cognome: string; email: string; telefono: string; iscritto_at: string | null };
+  let daImportare: RigaImport[] = [];
+
+  const leggiCsv = (testo: string): string[][] => {
+    const sep = (testo.split('\n')[0].match(/;/g)?.length ?? 0) >= (testo.split('\n')[0].match(/,/g)?.length ?? 0) ? ';' : ',';
+    const righe: string[][] = [];
+    let riga: string[] = [], cella = '', virgolette = false;
+    for (let i = 0; i < testo.length; i++) {
+      const c = testo[i];
+      if (virgolette) {
+        if (c === '"' && testo[i + 1] === '"') { cella += '"'; i++; }
+        else if (c === '"') virgolette = false;
+        else cella += c;
+      } else if (c === '"') virgolette = true;
+      else if (c === sep) { riga.push(cella); cella = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && testo[i + 1] === '\n') i++;
+        riga.push(cella); righe.push(riga); riga = []; cella = '';
+      } else cella += c;
+    }
+    if (cella || riga.length) { riga.push(cella); righe.push(riga); }
+    return righe.filter((r) => r.some((x) => x.trim()));
+  };
+
+  // "12/03/2024 21:15:33", "12/03/2024", "2024-03-12 21:15", or an Excel Date
+  const leggiData = (v: unknown): string | null => {
+    if (v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString();
+    const s = String(v ?? '').trim();
+    let m = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:[ T,]+(\d{1,2})[:.](\d{2})(?:[:.](\d{2}))?)?/);
+    if (m) {
+      const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+      const d = new Date(y, Number(m[2]) - 1, Number(m[1]), Number(m[4] ?? 12), Number(m[5] ?? 0), Number(m[6] ?? 0));
+      return Number.isNaN(d.getTime()) ? null : d.toISOString();
+    }
+    m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] ?? 12), Number(m[5] ?? 0)).toISOString();
+    return null;
+  };
+
+  const chiave = (h: unknown) => String(h ?? '').toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');
+
+  $<HTMLInputElement>('#import-file').addEventListener('change', async (e) => {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    let tabella: unknown[][];
+    try {
+      tabella = file.name.toLowerCase().endsWith('.xlsx') ? ((await readSheet(file)) as unknown[][]) : leggiCsv(await file.text());
+    } catch (err) {
+      console.error(err);
+      return msg('Non riesco a leggere il file. Salvalo come .xlsx o come CSV da Excel e riprova.', true);
+    }
+    const intestazioni = (tabella[0] ?? []).map(chiave);
+    const col = (...nomi: string[]) => intestazioni.findIndex((h) => nomi.includes(h));
+    const c = { data: col('dataora', 'data', 'dataiscrizione', 'timestamp', 'informazionicronologiche'), email: col('email', 'mail', 'indirizzoemail'), nome: col('nome'), cognome: col('cognome'), telefono: col('telefono', 'cellulare', 'tel') };
+    if (c.nome < 0 || c.cognome < 0 || (c.email < 0 && c.telefono < 0)) {
+      return msg(`Nel file non trovo le colonne Nome, Cognome ed Email o Telefono. Ho trovato: ${(tabella[0] ?? []).join(', ')}`, true);
+    }
+    const cella = (r: unknown[], i: number) => (i < 0 ? '' : String(r[i] ?? '').trim());
+    daImportare = tabella.slice(1).map((r, i) => ({
+      riga: i + 2,
+      nome: cella(r, c.nome), cognome: cella(r, c.cognome), email: cella(r, c.email), telefono: cella(r, c.telefono),
+      iscritto_at: c.data < 0 ? null : leggiData(r[c.data]),
+    }));
+    // older first, so card numbers follow the joining date
+    daImportare.sort((a, b) => (a.iscritto_at ?? '9999').localeCompare(b.iscritto_at ?? '9999'));
+    const box = $('.adm-import');
+    box.hidden = false;
+    $('.adm-import__esito').innerHTML = '';
+    $<HTMLButtonElement>('.adm-import__ok').hidden = false;
+    $('.adm-import__info').textContent = `${daImportare.length} righe in “${file.name}”. Verranno importate come soci attivi, numerate in ordine di iscrizione. Chi ha un’email o un telefono già presenti viene saltato. Ecco le prime:`;
+    $<HTMLButtonElement>('.adm-import__ok').textContent = `Importa ${daImportare.length} soci`;
+    $('.adm-import__anteprima').innerHTML = `<thead><tr><th>Riga</th><th>Iscritto il</th><th>Nome</th><th>Email</th><th>Telefono</th></tr></thead><tbody>${daImportare.slice(0, 6).map((r) => `<tr><td>${r.riga}</td><td>${r.iscritto_at ? giorno(r.iscritto_at) : '<em>data non letta</em>'}</td><td>${esc(r.nome)} ${esc(r.cognome)}</td><td>${esc(r.email)}</td><td>${esc(r.telefono)}</td></tr>`).join('')}</tbody>`;
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  $('.adm-import__annulla').addEventListener('click', () => { $('.adm-import').hidden = true; daImportare = []; });
+
+  $('.adm-import__ok').addEventListener('click', async () => {
+    const bottone = $<HTMLButtonElement>('.adm-import__ok');
+    bottone.disabled = true;
+    let importati = 0;
+    const saltati: string[] = [];
+    for (let i = 0; i < daImportare.length; i += 400) {
+      const blocco = daImportare.slice(i, i + 400);
+      const { data, error } = await sb.rpc('importa_soci', { p_righe: blocco.map(({ riga, ...r }) => r) });
+      if (fallito(error, 'Import')) { bottone.disabled = false; return; }
+      importati += data.importati;
+      for (const s of data.saltati) saltati.push(`riga ${blocco[s.riga - 1].riga}: ${s.motivo}`);
+    }
+    bottone.disabled = false;
+    bottone.hidden = true;
+    $('.adm-import__esito').innerHTML = `<p><strong>Importati ${importati} soci.</strong>${saltati.length ? ` Saltate ${saltati.length} righe:` : ''}</p>${saltati.length ? `<ul class="adm-saltati">${saltati.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}`;
+    caricaSoci();
+  });
+</script>
+
+<style is:global>
+  .adm-top [hidden], .adm [hidden] { display: none !important; }
+  .adm-top { border-bottom: var(--rule) solid var(--blue); }
+  .adm-top__row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 32px; min-height: 64px; }
+  .adm-mark { font-stretch: 125%; font-weight: 900; font-size: 1.6rem; text-decoration: none; letter-spacing: -0.03em; }
+  .adm-mark .label { font-stretch: 100%; letter-spacing: 0.06em; font-size: 0.75rem; margin-left: 6px; }
+  .adm-tabs { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-right: auto; }
+  .adm-tabs a { font-weight: 700; text-decoration: none; padding-block: 6px; }
+  .adm-tabs a[aria-current] { box-shadow: inset 0 -3px var(--blue); }
+  .adm-esci { border: 0; background: none; color: inherit; font: inherit; cursor: pointer; margin-left: auto; }
+  .adm-tabs:not([hidden]) + .adm-esci { margin-left: 0; }
+
+  .adm { padding-block: 32px 96px; display: grid; gap: 24px; }
+  .adm-msg { min-height: 1.5em; font-weight: 700; }
+  .adm-msg.is-errore { color: var(--overprint); background: color-mix(in srgb, var(--pink) 30%, transparent); padding: 8px 12px; }
+  .adm-view { display: grid; gap: 28px; align-content: start; }
+  .adm-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 16px; }
+  .adm-login { display: grid; gap: 20px; max-width: 420px; justify-items: start; }
+  .adm-login .field { width: 100%; }
+  .adm-card { display: grid; gap: 20px; border: var(--rule) solid var(--blue); padding: 20px 24px 24px; justify-items: start; }
+  .adm-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px 24px; width: 100%; align-items: start; }
+  .adm-fields .field--wide { grid-column: 1 / -1; }
+  .adm .field textarea, .adm .field select {
+    width: 100%; min-height: 48px; border: 0; border-bottom: var(--rule) solid var(--blue); border-radius: 0;
+    background: transparent; color: var(--blue); font: inherit; font-weight: 600; padding: 8px 0;
+  }
+  .adm .field textarea { border: var(--rule) solid var(--blue); padding: 10px 12px; font-weight: 500; line-height: 1.5; resize: vertical; }
+  .adm .field__hint { font-size: var(--step--1); font-weight: 600; }
+  .adm-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 28px; }
+  .adm button.link { border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; padding: 0 0 2px; }
+  .adm .check { display: flex; gap: 12px; align-items: center; font-weight: 600; cursor: pointer; }
+  .adm .check input { width: 22px; height: 22px; margin: 0; }
+  label.btn { cursor: pointer; }
+
+  .adm-lista { display: grid; border-top: var(--rule) solid var(--blue); }
+  .adm-riga { display: grid; grid-template-columns: 1fr auto auto; gap: 8px 24px; align-items: center; padding: 16px 0; border-bottom: var(--rule) solid var(--blue); text-decoration: none; }
+  .adm-riga strong { font-stretch: 112%; font-size: var(--step-1); }
+  .adm-riga:hover strong { text-decoration: underline; }
+  .adm-badge { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border: 2px solid var(--blue); padding: 2px 8px; white-space: nowrap; }
+  .adm-badge.is-on { background: var(--blue); color: var(--paper); }
+  .adm-badge.is-ko { background: var(--pink); border-color: var(--pink); color: var(--overprint); }
+
+  .adm-locandina { display: flex; gap: 20px; align-items: start; }
+  .adm-locandina__img img { width: 140px; height: auto; border: var(--rule) solid var(--blue); }
+  .adm-locandina > div { display: grid; gap: 6px; justify-items: start; }
+
+  .adm-vendite { display: grid; gap: 24px; border-top: var(--rule) solid var(--blue); padding-top: 24px; }
+  .adm-numeri { display: flex; flex-wrap: wrap; gap: 16px 48px; margin: 0; }
+  .adm-numeri dd { margin: 4px 0 0; font-size: var(--step-3); line-height: 0.9; }
+  .adm-numeri small { font-size: 0.45em; }
+  .adm-cerca-ordini { max-width: 420px; }
+  .adm-ordini { display: grid; border-top: var(--rule) solid var(--blue); }
+  .adm-ordine { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); }
+  .adm-ordine__head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; }
+  .adm-ordine__head strong { font-size: var(--step-1); }
+  .adm-ordine__b { display: grid; gap: 4px; padding-left: 18px; border-left: var(--rule) solid var(--blue); }
+  .adm-ordine__b li { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: center; font-size: var(--step--1); }
+
+  .adm-drop { display: grid; gap: 8px; justify-items: center; text-align: center; padding: 36px 20px; border: var(--rule) dashed var(--blue); transition: background 160ms; }
+  .adm-drop.is-over { background: color-mix(in srgb, var(--pink) 25%, transparent); border-style: solid; }
+  .adm-drop label { cursor: pointer; }
+  .adm-progress { width: min(100%, 420px); height: 12px; accent-color: var(--blue); }
+  .adm-foto { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .adm-foto li { display: grid; gap: 6px; }
+  .adm-foto img { width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--blue); }
+  .adm-foto li.is-cover img { outline: 5px solid var(--pink); outline-offset: -5px; }
+  .adm-foto__az { display: flex; justify-content: space-between; gap: 8px; font-size: var(--step--1); }
+
+  .adm-filtri { display: flex; flex-wrap: wrap; align-items: end; gap: 16px 32px; }
+  .adm-filtri .field:first-child { flex: 1 1 320px; }
+  .adm-tab-wrap { overflow-x: auto; width: 100%; }
+  .adm-tab { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
+  .adm-tab th { text-align: left; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: var(--rule) solid var(--blue); padding: 8px 12px 8px 0; white-space: nowrap; }
+  .adm-tab td { border-bottom: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); padding: 10px 12px 10px 0; vertical-align: top; }
+  .adm-saltati { font-size: var(--step--1); max-height: 240px; overflow: auto; }
+  @media (max-width: 640px) {
+    .adm-riga { grid-template-columns: 1fr auto; }
+    .adm-riga .label { grid-column: 1; }
+  }
+</style>

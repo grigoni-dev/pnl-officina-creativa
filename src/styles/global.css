@@ -293,6 +293,52 @@ a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 2p
 .field input:focus-visible { outline: none; }
 .field input:user-invalid { border-bottom-style: dashed; }
 
+/* ---------- long forms (tesseramento, biglietti) ---------- */
+  .modulo { padding-block: clamp(32px, 5vw, 72px) clamp(72px, 10vw, 144px); }
+  .modulo__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px clamp(16px, 2vw, 32px); align-items: start; }
+  .modulo__head { grid-column: 1 / 5; display: grid; gap: 24px; position: sticky; top: 120px; }
+  .modulo__passi { display: grid; gap: 8px; border-top: var(--rule) solid var(--blue); padding-top: 14px; }
+  .modulo__passi li { opacity: 0.55; }
+  .modulo__passi .is-qui { opacity: 1; }
+  .modulo__form { grid-column: 6 / 13; display: grid; gap: clamp(36px, 4vw, 56px); }
+
+  .gruppo { border: 0; margin: 0; padding: 0; border-top: var(--rule) solid var(--blue); padding-top: 18px; min-width: 0; }
+  .gruppo legend { float: left; width: 100%; padding: 0; margin-bottom: 20px; }
+  .gruppo__campi { clear: both; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px 24px; align-items: start; }
+  .gruppo__campi .field { grid-column: span var(--span, 3); }
+  .field input[type='date'] { min-height: 48px; }
+  .field__hint { font-size: var(--step--1); font-weight: 600; }
+  .field__err { font-size: var(--step--1); font-weight: 700; color: var(--overprint); background: color-mix(in srgb, var(--pink) 35%, transparent); padding: 4px 8px; justify-self: start; }
+  .field--errore input { border-bottom-color: var(--pink); border-bottom-style: solid; }
+
+  .consensi { clear: both; display: grid; gap: 14px; }
+  .check { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; cursor: pointer; font-weight: 500; max-width: 60ch; }
+  .check input { width: 26px; height: 26px; margin: 0; accent-color: var(--blue); }
+  .check--errore input { outline: var(--rule) solid var(--pink); outline-offset: 2px; }
+
+  .avviso { border: var(--rule) solid var(--blue); padding: 14px 18px; font-weight: 600; }
+  .avviso--errore { border-color: var(--pink); background: color-mix(in srgb, var(--pink) 18%, transparent); color: var(--overprint); }
+  .avviso:focus { outline: none; }
+
+  .paga { display: grid; grid-template-columns: auto 1fr; gap: 24px 32px; align-items: center; border-top: var(--rule) solid var(--blue); padding-top: 24px; }
+  .paga__importo { background: var(--pink); color: var(--overprint); font-size: clamp(4rem, 7vw, 6rem); line-height: 0.8; padding: 0.1em 0.14em 0.02em; }
+  .paga__testo { display: grid; gap: 12px; justify-items: start; }
+  .paga__note { font-size: var(--step--1); font-weight: 600; max-width: 44ch; }
+  .paga__btn:disabled { cursor: progress; opacity: 0.8; }
+
+  @media (max-width: 1080px) {
+    .modulo__head { grid-column: 1 / -1; position: static; }
+    .modulo__form { grid-column: 1 / -1; }
+  }
+  @media (max-width: 560px) {
+    .gruppo__campi .field { grid-column: 1 / -1; }
+    .gruppo__campi .field--half { grid-column: span 3; }
+    .paga { grid-template-columns: 1fr; }
+    .paga__btn { width: 100%; }
+    .paga__testo { justify-items: stretch; }
+  }
+.field--maiuscolo input { text-transform: uppercase; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
 }

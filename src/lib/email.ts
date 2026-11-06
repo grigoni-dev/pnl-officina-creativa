@@ -28,7 +28,7 @@ const esc = (s: string) =>
 export function emailTessera(p: { nome: string; cognome: string; numero: number; data: Date; sito: string }) {
   const n = String(p.numero).padStart(4, '0');
   const quando = p.data.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Rome' });
-  const verifica = `${p.sito}/verifica?numero=${p.numero}`;
+  const verifica = `${p.sito}/verifica`;
   const subject = `Benvenuto in PNL Officina Creativa · Tessera N° ${n}`;
   const text = [
     `Ciao ${p.nome},`,
@@ -40,7 +40,7 @@ export function emailTessera(p: { nome: string; cognome: string; numero: number;
     `Attiva dal: ${quando}`,
     '',
     'La tessera vale finché non chiedi il recesso: niente rinnovi annuali.',
-    `Per controllarne lo stato: ${verifica}`,
+    `Per controllarne lo stato (con questa email o il tuo telefono): ${verifica}`,
     '',
     'A presto,',
     'PNL Officina Creativa',
@@ -62,6 +62,62 @@ export function emailTessera(p: { nome: string; cognome: string; numero: number;
 <tr><td style="font-size:15px;line-height:1.5;padding-top:24px">La tessera vale finché non chiedi il recesso: niente rinnovi annuali.</td></tr>
 <tr><td style="padding-top:20px"><a href="${verifica}" style="display:inline-block;background:#3255a4;color:#ffe14d;font-weight:800;text-decoration:none;padding:14px 22px;border-bottom:5px solid #ff48b0">Verifica la tessera</a></td></tr>
 <tr><td style="font-size:13px;padding-top:32px;color:#3255a4">PNL Officina Creativa · Associazione culturale non profit</td></tr>
+</table></td></tr></table></body></html>`;
+
+  return { subject, html, text };
+}
+
+/** Tickets email: one block per ticket, each with its QR (served by /api/qr/<codice>). */
+export function emailBiglietti(
+  o: {
+    evento: { titolo: string; inizio: string; fine: string; luogo_nome: string; luogo_indirizzo: string | null };
+    biglietti: { codice: string; nome: string; cognome: string; stato: string }[];
+  },
+  sito: string,
+) {
+  const tz = { timeZone: 'Europe/Rome' } as const;
+  const inizio = new Date(o.evento.inizio), fine = new Date(o.evento.fine);
+  const giorno = inizio.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', ...tz });
+  const orario = `${inizio.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', ...tz })}–${fine.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', ...tz })}`;
+  const luogo = [o.evento.luogo_nome, o.evento.luogo_indirizzo].filter(Boolean).join(', ');
+  const validi = o.biglietti.filter((b) => b.stato === 'valido');
+  const n = validi.length;
+  const subject = `${n === 1 ? 'Il tuo biglietto' : `I tuoi ${n} biglietti`} · ${o.evento.titolo}`;
+
+  const text = [
+    `${o.evento.titolo}`,
+    `${giorno}, ${orario}`,
+    luogo,
+    '',
+    'Mostra il QR all’ingresso, dal telefono o stampato. Ogni biglietto vale per una persona e una volta sola.',
+    '',
+    ...validi.map((b) => `${b.nome} ${b.cognome}: ${sito}/biglietto/${b.codice}`),
+    '',
+    'A presto,',
+    'PNL Officina Creativa',
+  ].join('\n');
+
+  const blocchi = validi.map((b) => `
+<tr><td style="padding-top:16px">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:3px solid #3255a4;background:#ffffff">
+  <tr><td style="padding:16px 18px" valign="top">
+    <div style="font-size:12px;font-weight:700;letter-spacing:1px">BIGLIETTO</div>
+    <div style="font-size:22px;font-weight:900;padding:6px 0 10px">${esc(b.nome)} ${esc(b.cognome)}</div>
+    <a href="${sito}/biglietto/${b.codice}" style="color:#3255a4;font-weight:700;font-size:13px">Apri il biglietto sul telefono</a>
+  </td>
+  <td width="150" style="padding:12px" valign="middle"><img src="${sito}/api/qr/${b.codice}" width="140" height="140" alt="QR del biglietto di ${esc(b.nome)}" style="display:block"></td></tr>
+  </table>
+</td></tr>`).join('');
+
+  const html = `<!doctype html><html lang="it"><body style="margin:0;background:#ffe14d;font-family:Arial,Helvetica,sans-serif;color:#3255a4">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffe14d"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px">
+<tr><td style="font-size:28px;font-weight:900;letter-spacing:-1px;padding-bottom:20px">PNL <span style="font-size:12px;letter-spacing:1px;font-weight:700">OFFICINA CREATIVA</span></td></tr>
+<tr><td style="font-size:30px;font-weight:900;line-height:1.05;letter-spacing:-1px">${esc(o.evento.titolo)}</td></tr>
+<tr><td style="font-size:16px;font-weight:700;padding-top:10px">${esc(giorno)} · ${esc(orario)}<br>${esc(luogo)}</td></tr>
+<tr><td style="font-size:15px;line-height:1.5;padding-top:16px">Mostra il QR all’ingresso, dal telefono o stampato. Ogni biglietto vale per una persona e una volta sola.</td></tr>
+${blocchi}
+<tr><td style="font-size:13px;padding-top:28px">PNL Officina Creativa · Associazione culturale non profit</td></tr>
 </table></td></tr></table></body></html>`;
 
   return { subject, html, text };

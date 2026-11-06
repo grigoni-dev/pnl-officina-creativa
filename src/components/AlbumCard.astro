@@ -9,7 +9,7 @@ import { type Album, contaFoto, dataAlbum } from '../lib/album';
 interface Props { album: Album; sizes: string; headingLevel?: 'h2' | 'h3' }
 const { album: a, sizes, headingLevel: H = 'h3' } = Astro.props;
 ---
-<a class="album reg-host" href={`/eventi/${a.slug}`}>
+<a class="album reg-host" href={`/album/${a.slug}`}>
   <div class="album__stack">
     {a.copertina
       ? <Print foto={a.copertina} class="album__print" widths={[320, 480, 640]} sizes={sizes} />

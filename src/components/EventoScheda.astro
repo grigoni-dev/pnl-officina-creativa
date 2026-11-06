@@ -1,0 +1,129 @@
+---
+import Reg from './Reg.astro';
+import {
+  type Evento, anno, etichettaAccesso, etichettaBottone, etichettaIngresso, giornoEvento, mappa, orario, statoVendita,
+} from '../lib/eventi';
+
+/**
+ * An upcoming event as a poster sheet: the poster as printed (true colour, never
+ * cropped), the facts on the right, the button at the bottom. `grande` is the
+ * single-event layout; otherwise a compact row for lists.
+ * `dettaglio` shows the full description (event page) instead of linking to it.
+ */
+interface Props { evento: Evento; grande?: boolean; dettaglio?: boolean; titoloTag?: 'h1' | 'h2' | 'h3' }
+const { evento: e, grande = false, dettaglio = false, titoloTag = 'h2' } = Astro.props;
+const T = titoloTag;
+const vendita = statoVendita(e);
+const pagina = `/eventi/${e.slug}`;
+const giorno = e.inizio.toLocaleDateString('it-IT', { day: 'numeric', timeZone: 'Europe/Rome' });
+const mese = e.inizio.toLocaleDateString('it-IT', { month: 'short', timeZone: 'Europe/Rome' }).replace('.', '');
+const paragrafi = (e.descrizione ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti <= 20 && vendita === 'aperta';
+---
+<article class:list={['ev', grande && 'ev--grande', dettaglio && 'ev--dettaglio', e.stato === 'annullato' && 'ev--annullato']}>
+  <a class="ev__poster" href={dettaglio ? undefined : pagina} tabindex={dettaglio ? undefined : -1} aria-hidden={dettaglio ? undefined : 'true'}>
+    {e.locandina
+      ? <img src={e.locandina.src as string} alt={dettaglio ? e.locandina.alt : ''} width={e.locandina.width} height={e.locandina.height} loading={grande || dettaglio ? 'eager' : 'lazy'} decoding="async" />
+      : <span class="ev__poster-vuoto display"><span>{giorno}</span><span>{mese}</span></span>}
+    {e.stato === 'annullato' && <span class="stamp ev__annullato">Annullato</span>}
+  </a>
+
+  <div class="ev__info reg-host">
+    <p class="ev__data" aria-hidden="true">
+      <Reg as="span" class="display ev__giorno" text={giorno} />
+      <span class="label ev__mese">{mese} {anno(e.inizio)}</span>
+    </p>
+    {dettaglio
+      ? <Reg as={titoloTag} class="display ev__titolo" text={e.titolo} />
+      : <T class="display ev__titolo"><a href={pagina}>{e.titolo}</a></T>}
+
+    <ul class="ev__tag" aria-label="Ingresso">
+      <li class:list={['ev__badge', e.accesso === 'soci' && 'ev__badge--soci']}>{etichettaAccesso(e)}</li>
+      <li class:list={['ev__badge', e.ingresso === 'pagamento' ? 'ev__badge--prezzo' : 'ev__badge--libero']}>{etichettaIngresso(e)}</li>
+    </ul>
+
+    <dl class="ev__fatti">
+      <div><dt class="label">Quando</dt><dd>{giornoEvento(e.inizio)}, <span class="ev__orario">{orario(e)}</span></dd></div>
+      <div><dt class="label">Dove</dt><dd>{e.luogoNome}{e.luogoIndirizzo && <><br /><span class="ev__indirizzo">{e.luogoIndirizzo}</span></>} <a class="link ev__mappa" href={mappa(e)} target="_blank" rel="noopener">Mappa ↗</a></dd></div>
+    </dl>
+
+    {e.accesso === 'soci' && vendita !== 'annullato' && vendita !== 'concluso' && (
+      <p class="ev__nota">Riservato ai soci. Non lo sei ancora? Puoi iscriverti e prendere il biglietto nello stesso pagamento.</p>
+    )}
+
+    {dettaglio && paragrafi.length > 0 && (
+      <div class="ev__descr">{paragrafi.map((p) => <p>{p}</p>)}</div>
+    )}
+
+    <div class="ev__azione" data-hides-actionbar>
+      {vendita === 'aperta' && <a class="btn" href={`${pagina}/biglietti`}>{etichettaBottone(e)}</a>}
+      {vendita === 'esaurito' && <span class="btn btn--spento" aria-disabled="true">Esaurito</span>}
+      {vendita === 'chiusa' && <span class="btn btn--spento" aria-disabled="true">Vendite chiuse</span>}
+      {vendita === 'annullato' && <p class="label">Evento annullato. Chi aveva il biglietto viene rimborsato.</p>}
+      {vendita === 'concluso' && (e.albumSlug ? <a class="btn btn--paper" href={`/album/${e.albumSlug}`}>Guarda le foto</a> : <p class="label">Evento concluso</p>)}
+      {vendita === 'solo-info' && <p class="label">Ingresso libero, senza prenotazione: vieni e basta.</p>}
+      {rimasti && <p class="label ev__rimasti">Ultimi {e.postiRimasti} posti</p>}
+      {!dettaglio && <a class="link ev__dettagli" href={pagina}>Tutti i dettagli</a>}
+    </div>
+  </div>
+</article>
+
+<style>
+  .ev {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(24px, 3.5vw, 56px);
+    align-items: start;
+    padding-block: clamp(28px, 3.5vw, 48px);
+    border-top: var(--rule) solid var(--blue);
+  }
+  .ev--grande, .ev--dettaglio { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 0; padding-top: 0; }
+  .ev__poster { display: block; position: relative; border: var(--rule) solid var(--blue); background: var(--blue); }
+  .ev__poster img { width: 100%; height: auto; }
+  .ev__poster-vuoto { aspect-ratio: 3 / 4; display: grid; place-content: center; text-align: center; color: var(--paper); font-size: clamp(4rem, 9vw, 9rem); line-height: 0.8; }
+  .ev__poster-vuoto span:last-child { font-size: 0.4em; text-transform: uppercase; }
+  .ev--annullato .ev__poster img { filter: grayscale(1) contrast(0.9); opacity: 0.7; }
+  .ev__annullato { font-size: 1rem; top: 16px; right: 16px; padding: 6px 12px; }
+
+  .ev__info { display: grid; gap: 20px; align-content: start; justify-items: start; }
+  .ev--grande .ev__info, .ev--dettaglio .ev__info { position: sticky; top: 110px; }
+  .ev__data { display: flex; align-items: baseline; gap: 14px; }
+  .ev__data :global(.ev__giorno) { font-size: clamp(3.5rem, 7vw, 6.5rem); line-height: 0.8; }
+  .ev__mese { font-size: var(--step-0); }
+  .ev__info :global(.ev__titolo) { font-size: var(--step-3); line-height: 0.92; max-width: 16ch; overflow-wrap: anywhere; }
+  .ev:not(.ev--grande):not(.ev--dettaglio) .ev__info :global(.ev__titolo) { font-size: var(--step-2); }
+  .ev__titolo :global(a) { text-decoration: none; }
+  .ev__titolo :global(a:hover) { text-decoration: underline; text-decoration-thickness: 4px; }
+
+  .ev__tag { display: flex; flex-wrap: wrap; gap: 10px; }
+  .ev__badge {
+    font-weight: 800;
+    font-stretch: 112%;
+    font-size: var(--step-0);
+    line-height: 1;
+    padding: 9px 14px 8px;
+    border: var(--rule) solid var(--blue);
+  }
+  .ev__badge--soci { background: var(--pink); border-color: var(--pink); color: var(--overprint); }
+  .ev__badge--prezzo { background: var(--blue); color: var(--paper); }
+
+  .ev__fatti { display: grid; gap: 14px; margin: 0; width: 100%; border-top: var(--rule) solid var(--blue); padding-top: 16px; }
+  .ev__fatti div { display: grid; grid-template-columns: 7.5em 1fr; gap: 12px; align-items: baseline; }
+  .ev__fatti dd { margin: 0; font-weight: 700; font-size: var(--step-1); line-height: 1.3; }
+  .ev__orario { white-space: nowrap; }
+  .ev__indirizzo { font-weight: 500; font-size: var(--step-0); }
+  .ev__mappa { font-size: var(--step--1); margin-left: 6px; white-space: nowrap; }
+  .ev__nota { font-weight: 600; max-width: 46ch; padding-left: 14px; border-left: var(--rule) solid var(--pink); }
+  .ev__descr { display: grid; gap: 14px; max-width: 60ch; padding-top: 8px; }
+  .ev__azione { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; padding-top: 8px; }
+  .ev__rimasti { color: var(--overprint); border: 2px solid var(--pink); padding: 4px 8px; }
+  :global(.btn--spento) { cursor: not-allowed; --face: color-mix(in srgb, var(--blue) 45%, var(--paper)); --under: transparent; }
+
+  @media (max-width: 860px) {
+    .ev, .ev--grande, .ev--dettaglio { grid-template-columns: 1fr; }
+    .ev--grande .ev__info, .ev--dettaglio .ev__info { position: static; }
+    .ev:not(.ev--grande):not(.ev--dettaglio) .ev__poster { max-width: 320px; }
+    .ev__azione .btn { width: 100%; }
+    .ev__fatti div { grid-template-columns: 1fr; gap: 2px; }
+  }
+</style>

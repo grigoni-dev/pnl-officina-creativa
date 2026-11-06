@@ -1,11 +1,13 @@
-import Stripe from 'stripe';
-import { STRIPE_SECRET_KEY } from 'astro:env/server';
+import type Stripe from 'stripe';
 import { quota } from '../data/site';
+import { emailValida, normEmail, normTel, socioDaContatto, telefonoValido } from './contatti';
 import { emailTessera, inviaEmail } from './email';
-import { NonConfigurato, supabaseServizio } from './supabase';
+import { getStripe, paymentIntentId, scadenzaCheckout } from './stripe';
+import { supabaseServizio } from './supabase';
 
 /* ---------------------------------------------------------------------------
- * Form fields and validation
+ * Libro soci: fields and validation (used by /tesseramento and, prefixed,
+ * by the ticket form when someone joins and buys in one go)
  * ------------------------------------------------------------------------- */
 
 export const CAMPI = [
@@ -14,7 +16,8 @@ export const CAMPI = [
 ] as const;
 export type Campo = (typeof CAMPI)[number];
 export type DatiSocio = Record<Campo, string>;
-export type Errori = Partial<Record<Campo | 'privacy' | 'statuto' | 'generale', string>>;
+export type Errori = Partial<Record<string, string>>;
+export type ModuloSocio = { dati: DatiSocio; privacy: boolean; statuto: boolean };
 
 const ETA_MINIMA = 18;
 
@@ -26,7 +29,7 @@ export function codiceFiscaleValido(cf: string): boolean {
   let somma = 0;
   for (let i = 0; i < 15; i++) {
     const c = s.charCodeAt(i);
-    const v = c >= 48 && c <= 57 ? c - 48 : c - 65; // digits map like A..J
+    const v = c >= 48 && c <= 57 ? c - 48 : c - 65;
     somma += i % 2 === 0 ? dispari[v] : v;
   }
   return String.fromCharCode(65 + (somma % 26)) === s[15];
@@ -39,114 +42,120 @@ const etaAl = (nascita: Date, oggi = new Date()) => {
   return e;
 };
 
-export function leggiModulo(form: FormData): { dati: DatiSocio; privacy: boolean; statuto: boolean } {
+export const vuoto = (): DatiSocio => Object.fromEntries(CAMPI.map((c) => [c, ''])) as DatiSocio;
+
+/** Reads the member fields; `p` is the name prefix used when the form is embedded in another one. */
+export function leggiModulo(form: FormData, p = ''): ModuloSocio {
   const dati = Object.fromEntries(
-    CAMPI.map((c) => [c, String(form.get(c) ?? '').trim().replace(/\s+/g, ' ')]),
+    CAMPI.map((c) => [c, String(form.get(p + c) ?? '').trim().replace(/\s+/g, ' ')]),
   ) as DatiSocio;
   dati.codice_fiscale = dati.codice_fiscale.replace(/\s/g, '').toUpperCase();
   dati.provincia = dati.provincia.toUpperCase();
-  dati.email = dati.email.toLowerCase();
-  return { dati, privacy: form.get('privacy') === 'si', statuto: form.get('statuto') === 'si' };
+  dati.email = normEmail(dati.email);
+  return { dati, privacy: form.get(p + 'privacy') === 'si', statuto: form.get(p + 'statuto') === 'si' };
 }
 
-export function valida({ dati, privacy, statuto }: ReturnType<typeof leggiModulo>): Errori {
+/** Errors keyed by field name (with the same prefix). */
+export function valida({ dati, privacy, statuto }: ModuloSocio, p = ''): Errori {
   const e: Errori = {};
-  const obbligatori: Campo[] = ['nome', 'cognome', 'data_nascita', 'luogo_nascita', 'codice_fiscale', 'indirizzo', 'cap', 'comune', 'provincia', 'email'];
-  for (const c of obbligatori) if (!dati[c]) e[c] = 'Campo obbligatorio';
-  for (const c of CAMPI) if (dati[c].length > 120) e[c] = 'Troppo lungo';
+  for (const c of CAMPI) if (!dati[c]) e[p + c] = 'Campo obbligatorio';
+  for (const c of CAMPI) if (dati[c].length > 120) e[p + c] = 'Troppo lungo';
 
-  if (dati.data_nascita && !e.data_nascita) {
+  if (dati.data_nascita && !e[p + 'data_nascita']) {
     const d = new Date(`${dati.data_nascita}T12:00:00`);
-    if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) e.data_nascita = 'Data non valida';
-    else if (etaAl(d) < ETA_MINIMA) e.data_nascita = `L’iscrizione online è riservata ai maggiorenni: scrivici e ti diciamo come fare`;
+    if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) e[p + 'data_nascita'] = 'Data non valida';
+    else if (etaAl(d) < ETA_MINIMA) e[p + 'data_nascita'] = 'L’iscrizione online è riservata ai maggiorenni: scrivici e ti diciamo come fare';
   }
-  if (dati.codice_fiscale && !e.codice_fiscale && !codiceFiscaleValido(dati.codice_fiscale)) e.codice_fiscale = 'Codice fiscale non valido: controlla le lettere e i numeri';
-  if (dati.cap && !/^\d{5}$/.test(dati.cap)) e.cap = 'Il CAP ha 5 cifre';
-  if (dati.provincia && !/^[A-Z]{2}$/.test(dati.provincia)) e.provincia = 'Sigla di 2 lettere, per esempio TV';
-  if (dati.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dati.email)) e.email = 'Email non valida';
-  if (dati.telefono && !/^\+?[\d\s./-]{6,20}$/.test(dati.telefono)) e.telefono = 'Numero non valido';
-  if (!privacy) e.privacy = 'Serve il consenso per registrare i tuoi dati nel libro soci';
-  if (!statuto) e.statuto = 'Serve accettare lo statuto per diventare socio';
+  if (dati.codice_fiscale && !e[p + 'codice_fiscale'] && !codiceFiscaleValido(dati.codice_fiscale)) e[p + 'codice_fiscale'] = 'Codice fiscale non valido: controlla lettere e numeri';
+  if (dati.cap && !/^\d{5}$/.test(dati.cap)) e[p + 'cap'] = 'Il CAP ha 5 cifre';
+  if (dati.provincia && !/^[A-Z]{2}$/.test(dati.provincia)) e[p + 'provincia'] = 'Sigla di 2 lettere, per esempio TV';
+  if (dati.email && !emailValida(dati.email)) e[p + 'email'] = 'Email non valida';
+  if (dati.telefono && !telefonoValido(dati.telefono)) e[p + 'telefono'] = 'Numero non valido';
+  if (!privacy) e[p + 'privacy'] = 'Serve il consenso per registrare i tuoi dati nel libro soci';
+  if (!statuto) e[p + 'statuto'] = 'Serve accettare lo statuto per diventare socio';
   return e;
 }
 
 /* ---------------------------------------------------------------------------
- * Signup: pending member + Stripe Checkout
+ * Saving a pending member
  * ------------------------------------------------------------------------- */
-
-let stripe: Stripe | null = null;
-export function getStripe(): Stripe {
-  if (!STRIPE_SECRET_KEY) throw new NonConfigurato('Stripe (STRIPE_SECRET_KEY)');
-  return (stripe ??= new Stripe(STRIPE_SECRET_KEY));
-}
 
 export class GiaSocio extends Error {}
 
 /**
- * Saves the member as `in_attesa` (or refreshes an earlier unfinished signup
- * with the same codice fiscale) and returns the Stripe Checkout URL.
+ * Saves the member as `in_attesa`, or refreshes an earlier unfinished signup
+ * with the same codice fiscale. Throws GiaSocio if the codice fiscale, email
+ * or phone already belong to an active member.
  */
-export async function avviaIscrizione(dati: DatiSocio, sito: string): Promise<string> {
+export async function salvaSocioInAttesa(dati: DatiSocio): Promise<string> {
   const sb = supabaseServizio();
-  const riga = { ...dati, telefono: dati.telefono || null, consenso_privacy_at: new Date().toISOString(), updated_at: new Date().toISOString() };
 
-  const { data: esistente, error: e1 } = await sb
-    .from('soci')
-    .select('id, stato')
-    .eq('codice_fiscale', dati.codice_fiscale)
-    .maybeSingle();
+  // Separate parameterised lookups: never splice user input into a PostgREST filter string.
+  const [perCf, perEmail, perTel] = await Promise.all([
+    sb.from('soci').select('id').eq('stato', 'attivo').eq('codice_fiscale', dati.codice_fiscale).limit(1),
+    socioDaContatto(dati.email),
+    socioDaContatto(normTel(dati.telefono)),
+  ]);
+  if (perCf.error) throw perCf.error;
+  if (perCf.data?.length || perEmail || perTel) throw new GiaSocio();
+
+  const riga = {
+    ...dati,
+    stato: 'in_attesa',
+    origine: 'online',
+    consenso_privacy_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  const { data: esistente, error: e1 } = await sb.from('soci').select('id').eq('codice_fiscale', dati.codice_fiscale).maybeSingle();
   if (e1) throw e1;
-  if (esistente?.stato === 'attivo') throw new GiaSocio();
-
-  let id: string;
   if (esistente) {
-    const { error } = await sb.from('soci').update({ ...riga, stato: 'in_attesa' }).eq('id', esistente.id);
+    const { error } = await sb.from('soci').update(riga).eq('id', esistente.id);
     if (error) throw error;
-    id = esistente.id;
-  } else {
-    const { data, error } = await sb.from('soci').insert(riga).select('id').single();
-    if (error) throw error;
-    id = data.id;
+    return esistente.id;
   }
+  const { data, error } = await sb.from('soci').insert(riga).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
 
+/** Signup only (no ticket): saves the member and returns the Stripe Checkout URL. */
+export async function avviaIscrizione(dati: DatiSocio, sito: string): Promise<string> {
+  const id = await salvaSocioInAttesa(dati);
   const session = await getStripe().checkout.sessions.create({
     mode: 'payment',
     locale: 'it',
     customer_email: dati.email,
     client_reference_id: id,
-    metadata: { socio_id: id },
-    payment_intent_data: { description: `Quota associativa · ${dati.nome} ${dati.cognome}`, metadata: { socio_id: id } },
-    line_items: [{
-      quantity: 1,
-      price_data: {
-        currency: 'eur',
-        unit_amount: quota.importo * 100,
-        product_data: { name: 'Quota associativa PNL Officina Creativa', description: 'Una volta sola, valida fino al recesso' },
-      },
-    }],
+    metadata: { tipo: 'tessera', socio_id: id },
+    payment_intent_data: { description: `Quota associativa · ${dati.nome} ${dati.cognome}`, metadata: { tipo: 'tessera', socio_id: id } },
+    line_items: [rigaQuota()],
+    expires_at: scadenzaCheckout(),
     success_url: `${sito}/tesseramento/grazie?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${sito}/tesseramento?annullato=1`,
   });
-
-  await sb.from('soci').update({ stripe_session_id: session.id }).eq('id', id);
+  await supabaseServizio().from('soci').update({ stripe_session_id: session.id }).eq('id', id);
   return session.url!;
 }
 
+export const rigaQuota = (): Stripe.Checkout.SessionCreateParams.LineItem => ({
+  quantity: 1,
+  price_data: {
+    currency: 'eur',
+    unit_amount: quota.importo * 100,
+    product_data: { name: 'Quota associativa PNL Officina Creativa', description: 'Una volta sola, valida fino al recesso' },
+  },
+});
+
 /* ---------------------------------------------------------------------------
- * Activation: called by the Stripe webhook and by the thank-you page,
- * whichever comes first. Both paths are idempotent.
+ * Activation + welcome email. Called from the webhook and the thank-you
+ * pages, whichever comes first; both paths are idempotent.
  * ------------------------------------------------------------------------- */
 
-export type Tessera = { numero: number; nome: string; cognome: string; email: string; pagato_at: string };
+export type Tessera = { id: string; numero: number; nome: string; cognome: string; email: string; pagato_at: string };
 
-export async function completaPagamento(session: Stripe.Checkout.Session, sito: string): Promise<Tessera | null> {
-  if (session.payment_status !== 'paid') return null;
-  const socioId = session.metadata?.socio_id ?? session.client_reference_id;
-  if (!socioId) throw new Error(`Sessione ${session.id} senza socio_id`);
+export async function attivaSocio(socioId: string, session: Stripe.Checkout.Session, sito: string): Promise<Tessera | null> {
   const sb = supabaseServizio();
-
-  const pi = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null;
-  const { error } = await sb.rpc('attiva_socio', { p_socio: socioId, p_session: session.id, p_payment_intent: pi });
+  const { error } = await sb.rpc('attiva_socio', { p_socio: socioId, p_session: session.id, p_payment_intent: paymentIntentId(session) });
   if (error) throw error;
 
   const { data: socio, error: e2 } = await sb
@@ -157,7 +166,7 @@ export async function completaPagamento(session: Stripe.Checkout.Session, sito: 
   if (e2) throw e2;
   if (socio.stato !== 'attivo') return null;
 
-  if (!socio.email_inviata_at) {
+  if (!socio.email_inviata_at && socio.email) {
     // Claim the send first, so the webhook and the thank-you page never both send it.
     const { data: preso } = await sb
       .from('soci')

@@ -6,14 +6,17 @@ Il sito gira su **Vercel**. I dati (soci, album, foto) stanno su **Supabase**, i
 
 1. Crea un progetto su supabase.com, **regione Europa** (Francoforte) per il GDPR. Annota la password del database.
 2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Crea:
-   - le tabelle soci, album, foto e admins;
+   - le tabelle di soci, eventi, ordini, biglietti, album, foto e staff;
    - le regole di accesso;
-   - il bucket `album` per le foto;
+   - i bucket `album` e `locandine`;
    - la pulizia notturna.
 3. **Authentication → Sign In / Providers → Email**: disattiva *Allow new users to sign up*. Gli admin li crei tu.
-4. **Authentication → Users → Add user**: email e password di ogni volontario che userà `/admin`, con *Auto Confirm* attivo. Poi, nel SQL Editor:
+4. **Authentication → Users → Add user**: email e password di ogni volontario, con *Auto Confirm* attivo. Poi, nel SQL Editor, gli dai un ruolo:
    ```sql
-   insert into admins (user_id) select id from auth.users where email = 'nome@esempio.it';
+   -- tutto il pannello: eventi, biglietti, rimborsi, album, soci
+   insert into staff (user_id, ruolo) select id, 'admin' from auth.users where email = 'nome@esempio.it';
+   -- solo lo scanner all'ingresso (/admin/ingresso), senza accesso ai dati dei soci
+   insert into staff (user_id, ruolo) select id, 'ingresso' from auth.users where email = 'porta@esempio.it';
    ```
 5. **Project Settings → API**: copia
    - *Project URL* → `PUBLIC_SUPABASE_URL`
@@ -29,7 +32,7 @@ Il piano gratuito ha 1 GB di spazio per le foto. Il pannello le ridimensiona pri
 3. **Settings → Payment methods**: lascia attive le carte, Apple Pay e Google Pay; se vuoi, attiva anche PayPal. Checkout mostra da solo i metodi attivi, senza toccare il codice.
 4. **Developers → Webhooks → Add endpoint**:
    - URL: `https://<dominio>/api/stripe-webhook`
-   - eventi: `checkout.session.completed` e `checkout.session.async_payment_succeeded`
+   - eventi: `checkout.session.completed`, `checkout.session.async_payment_succeeded` e `checkout.session.expired` (quest'ultimo libera subito i posti di chi abbandona il pagamento)
    - *Signing secret* → `STRIPE_WEBHOOK_SECRET`
 
    Il webhook di test e quello live sono separati: quando passi al live crei di nuovo l'endpoint e aggiorni le due chiavi.
@@ -51,10 +54,15 @@ Il piano Hobby di Vercel è gratuito ma pensato per uso non commerciale. Per un'
 
 ## 5. Prova completa (in modalità test)
 
-1. Vai su `/admin`, entra, crea un album, trascina qualche foto, spunta *Pubblicato* e salva. Entro un minuto l'album compare in home e su `/eventi`.
-2. Vai su `/tesseramento` e compila con dati veri ma un'email tua. Paga con la carta di prova `4242 4242 4242 4242`, una scadenza futura qualsiasi e un CVC qualsiasi.
-3. Torni su "Benvenuto" con il numero di tessera. L'email arriva, all'account Resend finché non c'è il dominio.
-4. Su `/verifica?numero=1` risulta *Attiva*. In `/admin` → Soci compare il socio, e puoi provare *Registra recesso*.
+Carta di prova: `4242 4242 4242 4242`, una scadenza futura qualsiasi, un CVC qualsiasi. Le email arrivano all'account Resend finché non c'è il dominio.
+
+1. **Soci esistenti:** in `/admin` → Soci → *Importa lista* scegli il file Excel con le colonne Data/Ora, Email, Nome, Cognome, Telefono. Controlla l'anteprima e importa.
+2. **Tessera:** su `/tesseramento` iscriviti con un'email tua e paga. Arrivi su "Benvenuto" e ricevi l'email. Su `/verifica`, con la stessa email o lo stesso telefono, risulta *Attiva*.
+3. **Evento:** in `/admin` → Eventi → *Nuovo evento*. Compila, salva, carica la locandina e premi *Salva e pubblica*. Entro un minuto compare in home e su `/eventi`.
+4. **Biglietti:** compra due biglietti. Per un evento solo soci, il secondo va intestato a un socio importato, usando la sua email. Ti arriva l'email con due QR.
+5. **Iscrizione + biglietto:** con un'email nuova, su un evento solo soci, spunta "Mi iscrivo adesso": paghi tessera e biglietto insieme.
+6. **Ingresso:** dal telefono apri `/admin/ingresso` e inquadra un QR dell'email: deve dire *Valido* con il nome. Inquadralo di nuovo: *Già usato*.
+7. **Rimborso:** in `/admin` → l'evento → *Rimborsa* su un ordine. Su Stripe compare il rimborso e il QR non vale più.
 
 ## Sviluppo in locale
 
@@ -65,4 +73,4 @@ npm run dev
 stripe listen --forward-to localhost:4321/api/stripe-webhook
 ```
 
-Senza chiavi il sito funziona lo stesso. Gli album risultano vuoti, il tesseramento risponde "non ancora attivo" e `/admin` dice che Supabase non è collegato.
+Senza chiavi il sito funziona lo stesso: gli album risultano vuoti, tesseramento e biglietti rispondono "non ancora attivo" e `/admin` dice che Supabase non è collegato. In sviluppo (`npm run dev`) compaiono due **eventi dimostrativi**, per lavorare sulla grafica: `?demo=uno` ne mostra uno solo, `?demo=nessuno` nessuno. Nel sito pubblicato non ci sono.

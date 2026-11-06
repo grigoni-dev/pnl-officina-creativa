@@ -4,7 +4,9 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Reg from '../../components/Reg.astro';
 import { contatti } from '../../data/site';
-import { completaPagamento, getStripe, type Tessera } from '../../lib/soci';
+import { completaPagamento } from '../../lib/pagamenti';
+import type { Tessera } from '../../lib/soci';
+import { getStripe } from '../../lib/stripe';
 import { indirizzoSito } from '../../lib/sito';
 
 export const prerender = false;
@@ -18,7 +20,7 @@ let stato: 'ok' | 'attesa' | 'errore' = 'errore';
 if (/^cs_[A-Za-z0-9_]+$/.test(id)) {
   try {
     const session = await getStripe().checkout.sessions.retrieve(id);
-    tessera = await completaPagamento(session, indirizzoSito(Astro.url));
+    tessera = (await completaPagamento(session, indirizzoSito(Astro.url)))?.tessera ?? null;
     stato = tessera ? 'ok' : 'attesa';
   } catch (err) {
     console.error('grazie', err);

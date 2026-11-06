@@ -1,0 +1,237 @@
+---
+import Base from '../../../layouts/Base.astro';
+import Nav from '../../../components/Nav.astro';
+import Footer from '../../../components/Footer.astro';
+import Reg from '../../../components/Reg.astro';
+import Campo from '../../../components/Campo.astro';
+import { contatti, quota } from '../../../data/site';
+import { gruppiSocio } from '../../../lib/campi-socio';
+import { etichettaAccesso, eventoDaSlug, euro, giornoEvento, orario, statoVendita } from '../../../lib/eventi';
+import { entroIlLimite, impronta } from '../../../lib/limiti';
+import { ErroreOrdine, annullaCheckout, creaOrdine, leggiOrdine, validaOrdine, type Errori, type ModuloOrdine } from '../../../lib/ordini';
+import { vuoto } from '../../../lib/soci';
+import { indirizzoSito } from '../../../lib/sito';
+import { NonConfigurato } from '../../../lib/supabase';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const e = await eventoDaSlug(Astro.params.evento ?? '');
+if (!e) return new Response(null, { status: 404 });
+const vendita = statoVendita(e);
+const max = Math.max(1, Math.min(e.maxPerOrdine, e.postiRimasti ?? e.maxPerOrdine));
+const soci = e.accesso === 'soci';
+const prezzo = e.ingresso === 'pagamento' ? e.prezzoCent! : 0;
+
+let m: ModuloOrdine = {
+  acquirente: { nome: '', cognome: '', email: '', telefono: '' },
+  quantita: 1, perMe: true, biglietti: [], iscriviti: false,
+  socio: { dati: vuoto(), privacy: false, statuto: false }, privacy: false,
+};
+let errori: Errori = {};
+
+if (Astro.request.method === 'POST' && vendita === 'aperta') {
+  m = leggiOrdine(await Astro.request.formData(), max);
+  errori = validaOrdine(m, e);
+  if (!Object.keys(errori).length) {
+    try {
+      const chi = await impronta(Astro.request, Astro.clientAddress);
+      if (!(await entroIlLimite(`ordine:${chi}`, 10, 3600))) {
+        errori.generale = 'Troppi tentativi da questa connessione. Riprova tra un’ora o scrivici.';
+      } else {
+        const esito = await creaOrdine(m, e, indirizzoSito(Astro.url));
+        return Astro.redirect(esito.tipo === 'pagamento' ? esito.url : `/biglietti/grazie?ordine=${esito.ordineId}`, 303);
+      }
+    } catch (err) {
+      if (err instanceof ErroreOrdine) errori = err.errori;
+      else {
+        console.error('biglietti', err);
+        errori.generale = err instanceof NonConfigurato
+          ? 'La vendita online non è ancora attiva. Scrivici e ti teniamo il posto.'
+          : 'Qualcosa è andato storto dal nostro lato. Riprova tra poco o scrivici.';
+      }
+    }
+  }
+  if (Object.keys(errori).length) Astro.response.status = 422;
+}
+
+const annullato = Astro.url.searchParams.get('annullato');
+if (annullato && Astro.request.method === 'GET') await annullaCheckout(annullato).catch((err) => console.error('annullaCheckout', err));
+
+const righe = Array.from({ length: max }, (_, i) => m.biglietti[i] ?? { nome: '', cognome: '', contatto: '' });
+const erroriSocio = Object.keys(errori).some((k) => k.startsWith('s_'));
+const apriIscrizione = m.iscriviti || !!errori.non_socio || erroriSocio;
+const nErrori = Object.keys(errori).filter((k) => k !== 'generale' && k !== 'non_socio').length;
+const totale = prezzo * m.quantita + (m.iscriviti ? quota.importo * 100 : 0);
+const azione = prezzo > 0 || m.iscriviti ? 'Vai al pagamento' : 'Conferma la prenotazione';
+const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
+const gruppiLibro = gruppiSocio('s_', true);
+---
+<Base title={`${titoloPagina} · ${e.titolo} · PNL Officina Creativa`} description={`${titoloPagina} per ${e.titolo}.`}>
+  <Nav />
+  <main id="contenuto" class="modulo">
+    <div class="wrap modulo__grid">
+      <header class="modulo__head">
+        <a class="link" href={`/eventi/${e.slug}`}>← {e.titolo}</a>
+        <Reg as="h1" class="display h2" text={titoloPagina} />
+        <dl class="riepilogo">
+          <div><dt class="label">Evento</dt><dd>{e.titolo}</dd></div>
+          <div><dt class="label">Quando</dt><dd>{giornoEvento(e.inizio)}, {orario(e)}</dd></div>
+          <div><dt class="label">Dove</dt><dd>{e.luogoNome}</dd></div>
+          <div><dt class="label">Ingresso</dt><dd>{prezzo ? `${euro(prezzo)} a persona` : 'Libero, con prenotazione'} · {etichettaAccesso(e)}</dd></div>
+        </dl>
+        {soci && <p class="body nota-soci">Ogni biglietto è per un socio: per ognuno serve l’email o il telefono con cui è iscritto.</p>}
+      </header>
+
+      {vendita !== 'aperta' ? (
+        <div class="modulo__form">
+          <p class="avviso">
+            {vendita === 'esaurito' ? 'Posti esauriti.' : vendita === 'annullato' ? 'Questo evento è stato annullato.' : 'Le vendite per questo evento sono chiuse.'}
+          </p>
+          <a class="btn btn--paper" href="/eventi">Torna agli eventi</a>
+        </div>
+      ) : (
+      <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={prezzo} data-quota={quota.importo * 100}>
+        {annullato && !Object.keys(errori).length && <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla e i posti sono di nuovo liberi. Puoi riprovare quando vuoi.</p>}
+        {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
+        {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}
+
+        <fieldset class="gruppo">
+          <legend class="display h3">I tuoi dati</legend>
+          <div class="gruppo__campi">
+            <Campo def={{ nome: 'a_nome', label: 'Nome', auto: 'given-name' }} value={m.acquirente.nome} errore={errori.a_nome} />
+            <Campo def={{ nome: 'a_cognome', label: 'Cognome', auto: 'family-name' }} value={m.acquirente.cognome} errore={errori.a_cognome} />
+            <Campo def={{ nome: 'a_email', label: 'Email', type: 'email', auto: 'email', mode: 'email', hint: 'Qui arrivano i biglietti' }} value={m.acquirente.email} errore={errori.a_email} />
+            <Campo def={{ nome: 'a_telefono', label: 'Telefono', type: 'tel', auto: 'tel', mode: 'tel' }} value={m.acquirente.telefono} errore={errori.a_telefono} />
+          </div>
+        </fieldset>
+
+        <fieldset class="gruppo">
+          <legend class="display h3">Biglietti</legend>
+          <div class="biglietti">
+            <div class="field quantita">
+              <label for="quantita">Quanti</label>
+              <select id="quantita" name="quantita">
+                {Array.from({ length: max }, (_, i) => <option value={i + 1} selected={m.quantita === i + 1}>{i + 1}</option>)}
+              </select>
+            </div>
+            <label class="check">
+              <input type="checkbox" name="per_me" value="si" checked={m.perMe} />
+              <span>Il primo biglietto è per me</span>
+            </label>
+          </div>
+
+          <ol class="righe">
+            {righe.map((r, i) => (
+              <li class="riga" data-riga={i} hidden={i >= m.quantita ? true : undefined}>
+                <p class="label riga__n">Biglietto {i + 1}{i === 0 && <span class="riga__me"> · per te</span>}</p>
+                <div class="gruppo__campi riga__campi">
+                  <Campo def={{ nome: `b${i}_nome`, label: 'Nome', cols: soci ? 2 : 3, required: false }} value={r.nome} errore={errori[`b${i}_nome`]} />
+                  <Campo def={{ nome: `b${i}_cognome`, label: 'Cognome', cols: soci ? 2 : 3, required: false }} value={r.cognome} errore={errori[`b${i}_cognome`]} />
+                  {soci && <Campo def={{ nome: `b${i}_contatto`, label: 'Email o telefono da socio', cols: 2, required: false, auto: 'off' }} value={r.contatto} errore={errori[`b${i}_contatto`]} />}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </fieldset>
+
+        {soci && (
+          <fieldset class:list={['gruppo', 'iscrizione', errori.non_socio && 'iscrizione--evidenzia']}>
+            <legend class="display h3">Non sei ancora socio?</legend>
+            {errori.non_socio && <p class="avviso avviso--errore" role="alert">{errori.non_socio}</p>}
+            <label class="check">
+              <input type="checkbox" name="iscriviti" value="si" checked={m.iscriviti} data-iscriviti />
+              <span>Mi iscrivo adesso: tessera da {quota.importo}&nbsp;€ insieme al biglietto, in un solo pagamento.</span>
+            </label>
+            <div class="iscrizione__campi" data-campi-socio hidden={apriIscrizione ? undefined : true}>
+              <p class="body">Servono i dati per il libro soci. Nome, cognome, email e telefono sono quelli che hai già scritto sopra.</p>
+              {gruppiLibro.map((g) => (
+                <div class="gruppo__campi">
+                  {g.campi.map((f) => <Campo def={{ ...f, required: false }} value={m.socio.dati[f.nome.slice(2) as keyof typeof m.socio.dati]} errore={errori[f.nome]} />)}
+                </div>
+              ))}
+              <div class="consensi">
+                <label class:list={['check', errori.s_statuto && 'check--errore']}>
+                  <input type="checkbox" name="s_statuto" value="si" checked={m.socio.statuto} />
+                  <span>Chiedo di diventare socio di PNL Officina Creativa e accetto lo statuto.</span>
+                </label>
+                {errori.s_statuto && <p class="field__err">{errori.s_statuto}</p>}
+                <label class:list={['check', errori.s_privacy && 'check--errore']}>
+                  <input type="checkbox" name="s_privacy" value="si" checked={m.socio.privacy} />
+                  <span>Acconsento al trattamento dei miei dati per il libro soci (<a class="link" href="/privacy" target="_blank">informativa</a>).</span>
+                </label>
+                {errori.s_privacy && <p class="field__err">{errori.s_privacy}</p>}
+              </div>
+            </div>
+          </fieldset>
+        )}
+
+        <div class="consensi">
+          <label class:list={['check', errori.privacy && 'check--errore']}>
+            <input type="checkbox" name="privacy" value="si" checked={m.privacy} />
+            <span>Ho letto l’<a class="link" href="/privacy" target="_blank">informativa privacy</a> e acconsento all’uso dei dati per i biglietti e l’ingresso all’evento.</span>
+          </label>
+          {errori.privacy && <p class="field__err">{errori.privacy}</p>}
+        </div>
+
+        <div class="paga">
+          <p class="display paga__importo" data-totale aria-live="polite">{totale ? euro(totale) : 'Gratis'}</p>
+          <div class="paga__testo">
+            <button class="btn paga__btn" type="submit" data-azione>{azione}</button>
+            <p class="paga__note">{prezzo > 0 || soci ? 'Paghi su Stripe, in modo sicuro: carta, Apple Pay o Google Pay. ' : ''}I biglietti arrivano per email, con un QR per ognuno da mostrare all’ingresso.</p>
+          </div>
+        </div>
+      </form>
+      )}
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<script>
+  // Progressive enhancement: show as many ticket rows as chosen, hide the
+  // buyer's row when it's "for me", open the member fields, keep the total live.
+  const form = document.querySelector<HTMLFormElement>('.modulo__form[data-prezzo]');
+  document.getElementById('riepilogo-errori')?.focus();
+  if (form) {
+    const prezzo = Number(form.dataset.prezzo), quota = Number(form.dataset.quota);
+    const q = form.querySelector<HTMLSelectElement>('#quantita')!;
+    const perMe = form.querySelector<HTMLInputElement>('[name="per_me"]')!;
+    const iscr = form.querySelector<HTMLInputElement>('[data-iscriviti]');
+    const campiSocio = form.querySelector<HTMLElement>('[data-campi-socio]');
+    const totale = form.querySelector<HTMLElement>('[data-totale]')!;
+    const bottone = form.querySelector<HTMLButtonElement>('[data-azione]')!;
+    const euro = (c: number) => `${(c / 100).toLocaleString('it-IT', { minimumFractionDigits: c % 100 ? 2 : 0 })} €`;
+
+    const aggiorna = () => {
+      const n = Number(q.value);
+      form.querySelectorAll<HTMLElement>('[data-riga]').forEach((r) => {
+        const i = Number(r.dataset.riga);
+        r.hidden = i >= n || (i === 0 && perMe.checked);
+      });
+      if (campiSocio && iscr) campiSocio.hidden = !iscr.checked;
+      const t = prezzo * n + (iscr?.checked ? quota : 0);
+      totale.textContent = t ? euro(t) : 'Gratis';
+      bottone.textContent = t ? 'Vai al pagamento' : 'Conferma la prenotazione';
+    };
+    form.addEventListener('change', aggiorna);
+    aggiorna();
+    form.addEventListener('submit', () => { bottone.disabled = true; bottone.textContent = 'Un attimo…'; });
+  }
+</script>
+
+<style>
+  .riepilogo { display: grid; gap: 12px; margin: 0; border-top: var(--rule) solid var(--blue); padding-top: 14px; }
+  .riepilogo dd { margin: 2px 0 0; font-weight: 700; }
+  .nota-soci { font-weight: 600; padding-left: 14px; border-left: var(--rule) solid var(--pink); }
+  .biglietti { clear: both; display: flex; flex-wrap: wrap; align-items: end; gap: 16px 32px; margin-bottom: 20px; }
+  .quantita select { min-height: 48px; min-width: 96px; border: 0; border-bottom: var(--rule) solid var(--blue); background: transparent; color: var(--blue); font: inherit; font-weight: 700; font-size: var(--step-1); }
+  .righe { display: grid; gap: 22px; }
+  .riga { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); }
+  .riga[hidden] { display: none; }
+  .riga__me { opacity: 0.7; }
+  .iscrizione .check { clear: both; margin-bottom: 18px; }
+  .iscrizione__campi { display: grid; gap: 22px; }
+  .iscrizione__campi[hidden] { display: none; }
+  .iscrizione--evidenzia { border-top-color: var(--pink); }
+</style>

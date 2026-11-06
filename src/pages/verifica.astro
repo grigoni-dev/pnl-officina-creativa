@@ -5,40 +5,34 @@ import Footer from '../components/Footer.astro';
 import Reg from '../components/Reg.astro';
 import { contatti } from '../data/site';
 import { entroIlLimite, impronta } from '../lib/limiti';
-import { supabaseServizio } from '../lib/supabase';
+import { contattoValido, socioDaContatto } from '../lib/contatti';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
 
-// Looks up a card by number and answers with its status only: never a name,
-// never anything else. Rate limited per connection.
-const grezzo = (Astro.url.searchParams.get('numero') ?? '').replace(/\D/g, '');
-const numero = grezzo ? Number(grezzo) : null;
-type Esito = null | 'attivo' | 'receduto' | 'nessuna' | 'limite' | 'errore';
+// Looks up a member by the email or phone used to join and answers with the
+// status only: never a name, never anything else. Rate limited per connection.
+const contatto = (Astro.url.searchParams.get('contatto') ?? '').trim().slice(0, 120);
+type Esito = null | 'attiva' | 'nessuna' | 'non-valido' | 'limite' | 'errore';
 let esito = null as Esito;
 
-if (numero && numero < 1e7) {
-  try {
-    const chi = await impronta(Astro.request, Astro.clientAddress);
-    if (!(await entroIlLimite(`verifica:${chi}`, 20, 600))) {
-      esito = 'limite';
-      Astro.response.status = 429;
-    } else {
-      const { data, error } = await supabaseServizio()
-        .from('soci')
-        .select('stato')
-        .eq('numero', numero)
-        .in('stato', ['attivo', 'receduto'])
-        .maybeSingle();
-      if (error) throw error;
-      esito = (data?.stato as 'attivo' | 'receduto') ?? 'nessuna';
+if (contatto) {
+  if (!contattoValido(contatto)) esito = 'non-valido';
+  else {
+    try {
+      const chi = await impronta(Astro.request, Astro.clientAddress);
+      if (!(await entroIlLimite(`verifica:${chi}`, 20, 600))) {
+        esito = 'limite';
+        Astro.response.status = 429;
+      } else {
+        esito = (await socioDaContatto(contatto)) ? 'attiva' : 'nessuna';
+      }
+    } catch (err) {
+      console.error('verifica', err);
+      esito = 'errore';
     }
-  } catch (err) {
-    console.error('verifica', err);
-    esito = 'errore';
   }
 }
-const n = numero ? String(numero).padStart(4, '0') : '';
 ---
 <Base title="Verifica la tessera · PNL Officina Creativa" description="Controlla se una tessera di PNL Officina Creativa è attiva.">
   <Nav />
@@ -48,21 +42,21 @@ const n = numero ? String(numero).padStart(4, '0') : '';
 
       <form class="ver__form" method="get">
         <div class="field">
-          <label for="numero">Numero tessera</label>
-          <input id="numero" name="numero" type="text" inputmode="numeric" autocomplete="off" value={grezzo} required />
+          <label for="contatto">Email o telefono</label>
+          <input id="contatto" name="contatto" type="text" autocomplete="email" value={contatto} required maxlength="120" />
         </div>
         <button class="btn" type="submit">Verifica</button>
       </form>
 
       <div class="ver__esito" role="status" aria-live="polite">
-        {esito === 'attivo' && <p class="esito esito--ok"><span class="label">Tessera N° {n}</span><strong class="display">Attiva</strong></p>}
-        {esito === 'receduto' && <p class="esito"><span class="label">Tessera N° {n}</span><strong class="display">Receduta</strong></p>}
-        {esito === 'nessuna' && <p class="esito"><span class="label">Tessera N° {n}</span><strong class="display">Non trovata</strong></p>}
+        {esito === 'attiva' && <p class="esito esito--ok"><span class="label">Tessera</span><strong class="display">Attiva</strong></p>}
+        {esito === 'nessuna' && <p class="esito"><span class="label">Tessera</span><strong class="display">Non trovata</strong></p>}
+        {esito === 'non-valido' && <p class="lede">Scrivi un’email o un numero di telefono validi.</p>}
         {esito === 'limite' && <p class="lede">Troppe verifiche in poco tempo. Riprova tra qualche minuto.</p>}
         {esito === 'errore' && <p class="lede">La verifica non è disponibile in questo momento. Scrivici a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>}
       </div>
 
-      <p class="body ver__note">Mostriamo solo lo stato della tessera, mai i dati di chi la possiede. Il numero è nell’email che hai ricevuto quando ti sei iscritto.</p>
+      <p class="body ver__note">Usa l’email o il telefono con cui ti sei iscritto. Mostriamo solo se la tessera è attiva, mai altri dati. Se non la trovi, scrivici.</p>
     </div>
   </main>
   <Footer />

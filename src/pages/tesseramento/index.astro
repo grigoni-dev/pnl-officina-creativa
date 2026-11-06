@@ -3,7 +3,9 @@ import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Reg from '../../components/Reg.astro';
+import Campo from '../../components/Campo.astro';
 import { contatti, quota } from '../../data/site';
+import { gruppiSocio } from '../../lib/campi-socio';
 import { CAMPI, GiaSocio, avviaIscrizione, leggiModulo, valida, type DatiSocio, type Errori } from '../../lib/soci';
 import { entroIlLimite, impronta } from '../../lib/limiti';
 import { NonConfigurato } from '../../lib/supabase';
@@ -51,42 +53,23 @@ if (Astro.request.method === 'POST') {
 const annullato = Astro.url.searchParams.has('annullato');
 const nErrori = Object.keys(errori).filter((k) => k !== 'generale').length;
 
-type Def = { c: (typeof CAMPI)[number]; label: string; type?: 'text' | 'date' | 'email' | 'tel'; auto?: string; mode?: string; cols?: number; half?: boolean; hint?: string; req?: boolean };
-const gruppi: { titolo: string; campi: Def[] }[] = [
-  { titolo: 'Chi sei', campi: [
-    { c: 'nome', label: 'Nome', auto: 'given-name' },
-    { c: 'cognome', label: 'Cognome', auto: 'family-name' },
-    { c: 'data_nascita', label: 'Data di nascita', type: 'date', auto: 'bday' },
-    { c: 'luogo_nascita', label: 'Luogo di nascita' },
-    { c: 'codice_fiscale', label: 'Codice fiscale', cols: 6, auto: 'off' },
-  ] },
-  { titolo: 'Dove abiti', campi: [
-    { c: 'indirizzo', label: 'Via e numero civico', cols: 6, auto: 'street-address' },
-    { c: 'comune', label: 'Comune', auto: 'address-level2', cols: 2 },
-    { c: 'cap', label: 'CAP', mode: 'numeric', auto: 'postal-code', cols: 2, half: true },
-    { c: 'provincia', label: 'Provincia', auto: 'address-level1', cols: 2, half: true, hint: 'Sigla, es. TV' },
-  ] },
-  { titolo: 'Come ti contattiamo', campi: [
-    { c: 'email', label: 'Email', type: 'email', auto: 'email', mode: 'email', hint: 'Qui arriva la tessera' },
-    { c: 'telefono', label: 'Telefono', type: 'tel', auto: 'tel', mode: 'tel', req: false, hint: 'Facoltativo' },
-  ] },
-];
+const gruppi = gruppiSocio();
 ---
 <Base title={`Diventa socio · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi con carta, Apple Pay o Google Pay e la tessera arriva per email.`}>
   <Nav />
-  <main id="contenuto" class="iscr">
-    <div class="wrap iscr__grid">
-      <header class="iscr__head">
+  <main id="contenuto" class="modulo">
+    <div class="wrap modulo__grid">
+      <header class="modulo__head">
         <Reg as="h1" class="display h1" text="Diventa socio" />
         <p class="lede">{quota.importo}&nbsp;€, una volta sola. Compili, paghi, e la tessera ti arriva per email. Vale finché non chiedi il recesso.</p>
-        <ol class="iscr__passi label">
+        <ol class="modulo__passi label">
           <li class="is-qui">1 · I tuoi dati</li>
           <li>2 · La quota</li>
           <li>3 · La tessera</li>
         </ol>
       </header>
 
-      <form class="iscr__form" method="post" novalidate>
+      <form class="modulo__form" method="post" novalidate data-hides-actionbar>
         {annullato && !Object.keys(errori).length && (
           <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla. I tuoi dati sono qui sotto, puoi riprovare quando vuoi.</p>
         )}
@@ -97,27 +80,7 @@ const gruppi: { titolo: string; campi: Def[] }[] = [
           <fieldset class="gruppo">
             <legend class="display h3">{g.titolo}</legend>
             <div class="gruppo__campi">
-              {g.campi.map((f) => (
-                <div class:list={['field', f.half && 'field--half', errori[f.c] && 'field--errore']} style={`--span:${f.cols ?? 3}`}>
-                  <label for={f.c}>{f.label}</label>
-                  <input
-                    id={f.c}
-                    name={f.c}
-                    type={f.type ?? 'text'}
-                    value={dati[f.c]}
-                    autocomplete={f.auto}
-                    inputmode={f.mode as any}
-                    required={f.req !== false}
-                    aria-invalid={errori[f.c] ? 'true' : undefined}
-                    aria-describedby={errori[f.c] ? `${f.c}-err` : f.hint ? `${f.c}-hint` : undefined}
-                    autocapitalize={f.c === 'codice_fiscale' || f.c === 'provincia' ? 'characters' : undefined}
-                    maxlength={f.c === 'codice_fiscale' ? 16 : f.c === 'provincia' ? 2 : f.c === 'cap' ? 5 : 120}
-                  />
-                  {errori[f.c]
-                    ? <p class="field__err" id={`${f.c}-err`}>{errori[f.c]}</p>
-                    : f.hint && <p class="field__hint" id={`${f.c}-hint`}>{f.hint}</p>}
-                </div>
-              ))}
+              {g.campi.map((f) => <Campo def={f} value={dati[f.nome as keyof typeof dati]} errore={errori[f.nome]} />)}
             </div>
           </fieldset>
         ))}
@@ -155,56 +118,11 @@ const gruppi: { titolo: string; campi: Def[] }[] = [
   // After a failed submit, move focus to the summary so screen readers announce it.
   document.getElementById('riepilogo-errori')?.focus();
   // Avoid double submits while the redirect to Stripe is on its way.
-  const form = document.querySelector<HTMLFormElement>('.iscr__form');
+  const form = document.querySelector<HTMLFormElement>('.modulo__form');
   form?.addEventListener('submit', () => {
     const b = form.querySelector<HTMLButtonElement>('.paga__btn');
     if (b) { b.disabled = true; b.textContent = 'Un attimo…'; }
   });
 </script>
 
-<style>
-  .iscr { padding-block: clamp(32px, 5vw, 72px) clamp(72px, 10vw, 144px); }
-  .iscr__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px clamp(16px, 2vw, 32px); align-items: start; }
-  .iscr__head { grid-column: 1 / 5; display: grid; gap: 24px; position: sticky; top: 120px; }
-  .iscr__passi { display: grid; gap: 8px; border-top: var(--rule) solid var(--blue); padding-top: 14px; }
-  .iscr__passi li { opacity: 0.55; }
-  .iscr__passi .is-qui { opacity: 1; }
-  .iscr__form { grid-column: 6 / 13; display: grid; gap: clamp(36px, 4vw, 56px); }
 
-  .gruppo { border: 0; margin: 0; padding: 0; border-top: var(--rule) solid var(--blue); padding-top: 18px; min-width: 0; }
-  .gruppo legend { float: left; width: 100%; padding: 0; margin-bottom: 20px; }
-  .gruppo__campi { clear: both; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px 24px; align-items: start; }
-  .gruppo__campi .field { grid-column: span var(--span, 3); }
-  .field input[type='date'] { min-height: 48px; }
-  .field__hint { font-size: var(--step--1); font-weight: 600; }
-  .field__err { font-size: var(--step--1); font-weight: 700; color: var(--overprint); background: color-mix(in srgb, var(--pink) 35%, transparent); padding: 4px 8px; justify-self: start; }
-  .field--errore input { border-bottom-color: var(--pink); border-bottom-style: solid; }
-  #codice_fiscale, #provincia { text-transform: uppercase; }
-
-  .consensi { clear: both; display: grid; gap: 14px; }
-  .check { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: start; cursor: pointer; font-weight: 500; max-width: 60ch; }
-  .check input { width: 26px; height: 26px; margin: 0; accent-color: var(--blue); }
-  .check--errore input { outline: var(--rule) solid var(--pink); outline-offset: 2px; }
-
-  .avviso { border: var(--rule) solid var(--blue); padding: 14px 18px; font-weight: 600; }
-  .avviso--errore { border-color: var(--pink); background: color-mix(in srgb, var(--pink) 18%, transparent); color: var(--overprint); }
-  .avviso:focus { outline: none; }
-
-  .paga { display: grid; grid-template-columns: auto 1fr; gap: 24px 32px; align-items: center; border-top: var(--rule) solid var(--blue); padding-top: 24px; }
-  .paga__importo { background: var(--pink); color: var(--overprint); font-size: clamp(4rem, 7vw, 6rem); line-height: 0.8; padding: 0.1em 0.14em 0.02em; }
-  .paga__testo { display: grid; gap: 12px; justify-items: start; }
-  .paga__note { font-size: var(--step--1); font-weight: 600; max-width: 44ch; }
-  .paga__btn:disabled { cursor: progress; opacity: 0.8; }
-
-  @media (max-width: 1080px) {
-    .iscr__head { grid-column: 1 / -1; position: static; }
-    .iscr__form { grid-column: 1 / -1; }
-  }
-  @media (max-width: 560px) {
-    .gruppo__campi .field { grid-column: 1 / -1; }
-    .gruppo__campi .field--half { grid-column: span 3; }
-    .paga { grid-template-columns: 1fr; }
-    .paga__btn { width: 100%; }
-    .paga__testo { justify-items: stretch; }
-  }
-</style>

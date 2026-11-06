@@ -1,0 +1,254 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="Ingresso · PNL" description="Scanner dei biglietti." noindex>
+  <main id="contenuto" class="ing">
+    <header class="ing__top">
+      <a class="ing__mark" href="/admin">PNL <span class="label">Ingresso</span></a>
+      <p class="ing__conta label" aria-live="polite"></p>
+      <button class="ing__esci link" type="button" hidden>Esci</button>
+    </header>
+    <p class="adm-msg" role="status" aria-live="polite"></p>
+
+    <section class="ing__view" data-view="login" hidden>
+      <h1 class="display h2">Ingresso</h1>
+      <form class="ing__login">
+        <div class="field"><label for="l-email">Email</label><input id="l-email" name="email" type="email" autocomplete="username" required /></div>
+        <div class="field"><label for="l-pw">Password</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required /></div>
+        <button class="btn" type="submit">Entra</button>
+      </form>
+    </section>
+
+    <section class="ing__view" data-view="config" hidden>
+      <h1 class="display h2">Supabase non collegato</h1>
+    </section>
+
+    <section class="ing__view" data-view="eventi" hidden>
+      <h1 class="display h2">Quale evento?</h1>
+      <ul class="ing__eventi"></ul>
+    </section>
+
+    <section class="ing__view ing__scan" data-view="scan" hidden>
+      <div class="ing__cam">
+        <video playsinline muted></video>
+        <div class="ing__mirino" aria-hidden="true"></div>
+        <button class="btn ing__avvia" type="button">Avvia la fotocamera</button>
+      </div>
+
+      <div class="ing__esito" hidden role="alert">
+        <p class="ing__esito-icona display" aria-hidden="true"></p>
+        <p class="ing__esito-titolo display"></p>
+        <p class="ing__esito-nome"></p>
+        <p class="ing__esito-extra label"></p>
+        <button class="btn btn--paper ing__avanti" type="button">Avanti</button>
+      </div>
+
+      <div class="ing__manuale">
+        <div class="field"><label for="cerca">Il QR non si legge? Cerca per nome</label><input id="cerca" type="search" autocomplete="off" /></div>
+        <ul class="ing__risultati"></ul>
+        <button class="link ing__cambia" type="button">Cambia evento</button>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<script>
+  import jsQR from 'jsqr';
+  import { $, configurato, esc, fallito, login, ruolo, sb } from '../../scripts/admin-comune';
+
+  type Esito = { esito: string; nome: string | null; cognome: string | null; usato_at: string | null; altro_evento: string | null };
+  let eventoId = '';
+  let attivo = false;
+  let ultimo = { codice: '', at: 0 };
+
+  const mostra = (v: string) => document.querySelectorAll<HTMLElement>('.ing__view').forEach((x) => (x.hidden = x.dataset.view !== v));
+
+  const entra = async () => {
+    const r = await ruolo();
+    $('.ing__esci').hidden = !r;
+    if (!r) return mostra('login');
+    scegliEvento();
+  };
+
+  const scegliEvento = async () => {
+    mostra('eventi');
+    ferma();
+    const da = new Date(Date.now() - 12 * 3600e3).toISOString();
+    const { data, error } = await sb.from('eventi').select('id, titolo, inizio').eq('stato', 'pubblicato').gt('fine', da).order('inizio');
+    if (fallito(error, 'Eventi')) return;
+    const lista = data ?? [];
+    const salvato = sessionStorage.getItem('ingresso-evento');
+    if (salvato && lista.some((e) => e.id === salvato)) return apri(salvato);
+    if (lista.length === 1) return apri(lista[0].id);
+    $('.ing__eventi').innerHTML = lista.map((e) => `
+      <li><button type="button" class="ing__evento" data-id="${e.id}">
+        <strong>${esc(e.titolo)}</strong>
+        <span class="label">${new Date(e.inizio).toLocaleString('it-IT', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+      </button></li>`).join('') || '<li class="body">Nessun evento oggi o nei prossimi giorni.</li>';
+  };
+
+  const apri = async (id: string) => {
+    eventoId = id;
+    try { sessionStorage.setItem('ingresso-evento', id); } catch {}
+    mostra('scan');
+    conta();
+  };
+
+  const conta = async () => {
+    const { data } = await sb.rpc('conteggio_ingressi', { p_evento: eventoId });
+    const c = data?.[0];
+    $('.ing__conta').textContent = c ? `Entrati ${c.entrati} su ${c.totale}` : '';
+  };
+
+  /* ---------- camera + QR ---------- */
+  const video = $<HTMLVideoElement>('.ing__cam video');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+  let stream: MediaStream | null = null;
+  let ultimoFrame = 0;
+
+  const avvia = async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    } catch {
+      return fallito({ message: 'non riesco ad aprire la fotocamera. Controlla i permessi del browser, o cerca per nome qui sotto.' }, 'Fotocamera');
+    }
+    video.srcObject = stream;
+    await video.play();
+    $('.ing__avvia').hidden = true;
+    attivo = true;
+    requestAnimationFrame(leggi);
+  };
+  const ferma = () => {
+    attivo = false;
+    stream?.getTracks().forEach((t) => t.stop());
+    stream = null;
+    $('.ing__avvia').hidden = false;
+  };
+
+  const leggi = (t: number) => {
+    if (!attivo) return;
+    if (t - ultimoFrame > 180 && video.readyState >= 2 && $('.ing__esito').hidden) {
+      ultimoFrame = t;
+      const w = 640, h = Math.round((video.videoHeight / video.videoWidth) * w) || 480;
+      canvas.width = w; canvas.height = h;
+      ctx.drawImage(video, 0, 0, w, h);
+      const qr = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+      const letto = qr?.data.trim();
+      if (letto && !(letto === ultimo.codice && Date.now() - ultimo.at < 4000)) {
+        ultimo = { codice: letto, at: Date.now() };
+        const codice = letto.match(/([0-9a-f]{32})$/i)?.[1]?.toLowerCase();
+        if (codice) controlla({ p_codice: codice });
+        else mostraEsito({ esito: 'inesistente', nome: null, cognome: null, usato_at: null, altro_evento: null });
+      }
+    }
+    requestAnimationFrame(leggi);
+  };
+
+  /* ---------- check-in ---------- */
+  const controlla = async (arg: { p_codice?: string; p_biglietto?: string }) => {
+    const { data, error } = await sb.rpc('ingresso', { p_evento: eventoId, ...arg });
+    if (fallito(error, 'Verifica')) return;
+    mostraEsito(data[0] as Esito);
+    conta();
+  };
+
+  const TESTI: Record<string, { icona: string; titolo: string; classe: string }> = {
+    valido: { icona: '✓', titolo: 'Valido', classe: 'is-ok' },
+    gia_usato: { icona: '!', titolo: 'Già usato', classe: 'is-warn' },
+    non_valido: { icona: '✕', titolo: 'Non valido', classe: 'is-ko' },
+    altro_evento: { icona: '✕', titolo: 'Altro evento', classe: 'is-ko' },
+    inesistente: { icona: '✕', titolo: 'Non riconosciuto', classe: 'is-ko' },
+  };
+
+  let timer = 0;
+  const mostraEsito = (r: Esito) => {
+    const t = TESTI[r.esito] ?? TESTI.inesistente;
+    const box = $('.ing__esito');
+    box.className = `ing__esito ${t.classe}`;
+    $('.ing__esito-icona').textContent = t.icona;
+    $('.ing__esito-titolo').textContent = t.titolo;
+    $('.ing__esito-nome').textContent = r.nome ? `${r.nome} ${r.cognome}` : '';
+    $('.ing__esito-extra').textContent =
+      r.esito === 'gia_usato' && r.usato_at ? `Entrato alle ${new Date(r.usato_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` :
+      r.esito === 'altro_evento' ? `Biglietto di “${r.altro_evento}”` :
+      r.esito === 'non_valido' ? 'Biglietto annullato o rimborsato' : '';
+    box.hidden = false;
+    navigator.vibrate?.(r.esito === 'valido' ? 80 : [120, 80, 120]);
+    clearTimeout(timer);
+    if (r.esito === 'valido') timer = window.setTimeout(chiudiEsito, 2200);
+  };
+  const chiudiEsito = () => { $('.ing__esito').hidden = true; };
+
+  /* ---------- manual search ---------- */
+  let cercaTimer = 0;
+  $('#cerca').addEventListener('input', (e) => {
+    clearTimeout(cercaTimer);
+    const q = (e.target as HTMLInputElement).value.trim();
+    cercaTimer = window.setTimeout(async () => {
+      if (q.length < 2) return ($('.ing__risultati').innerHTML = '');
+      const { data, error } = await sb.rpc('cerca_biglietti', { p_evento: eventoId, p_testo: q });
+      if (fallito(error, 'Ricerca')) return;
+      $('.ing__risultati').innerHTML = (data ?? []).map((b: any) => `
+        <li><span>${esc(b.nome)} ${esc(b.cognome)}</span>
+          ${b.stato === 'usato' ? `<span class="label">entrato ${new Date(b.usato_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</span>` : `<button type="button" class="btn ing__fai" data-id="${b.id}">Fai entrare</button>`}
+        </li>`).join('') || '<li class="label">Nessun biglietto con questo nome</li>';
+    }, 250);
+  });
+  $('.ing__risultati').addEventListener('click', async (e) => {
+    const id = (e.target as HTMLElement).dataset.id;
+    if (!id) return;
+    await controlla({ p_biglietto: id });
+    ($('#cerca') as HTMLInputElement).value = '';
+    $('.ing__risultati').innerHTML = '';
+  });
+
+  /* ---------- wiring ---------- */
+  if (!configurato) mostra('config');
+  else {
+    $('.ing__login').addEventListener('submit', async (e) => { e.preventDefault(); if (await login(e.target as HTMLFormElement)) entra(); });
+    $('.ing__esci').addEventListener('click', async () => { ferma(); await sb.auth.signOut(); entra(); });
+    $('.ing__eventi').addEventListener('click', (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>('[data-id]'); if (b) apri(b.dataset.id!); });
+    $('.ing__avvia').addEventListener('click', avvia);
+    $('.ing__avanti').addEventListener('click', chiudiEsito);
+    $('.ing__cambia').addEventListener('click', () => { try { sessionStorage.removeItem('ingresso-evento'); } catch {} scegliEvento(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) ferma(); });
+    entra();
+  }
+</script>
+
+<style is:global>
+  .ing [hidden] { display: none !important; }
+  .ing { min-height: 100svh; display: grid; grid-template-rows: auto auto 1fr; padding: 0 16px 24px; max-width: 640px; margin: 0 auto; }
+  .ing__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; border-bottom: var(--rule) solid var(--blue); }
+  .ing__mark { font-stretch: 125%; font-weight: 900; font-size: 1.4rem; text-decoration: none; }
+  .ing__mark .label { font-stretch: 100%; font-size: 0.7rem; margin-left: 4px; }
+  .ing__esci { border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
+  .ing .adm-msg { min-height: 1.2em; font-weight: 700; padding-block: 8px; }
+  .ing .adm-msg.is-errore { color: var(--overprint); background: color-mix(in srgb, var(--pink) 30%, transparent); padding: 8px 12px; }
+  .ing__view { display: grid; gap: 20px; align-content: start; }
+  .ing__login { display: grid; gap: 18px; }
+  .ing__eventi { display: grid; gap: 12px; }
+  .ing__evento { width: 100%; display: grid; gap: 6px; text-align: left; padding: 18px; border: var(--rule) solid var(--blue); background: var(--paper); color: var(--blue); font: inherit; cursor: pointer; }
+  .ing__evento strong { font-stretch: 112%; font-size: var(--step-1); }
+
+  .ing__cam { position: relative; aspect-ratio: 1; background: var(--blue); overflow: hidden; display: grid; place-items: center; }
+  .ing__cam video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ing__mirino { position: absolute; inset: 18%; border: 4px solid var(--paper); box-shadow: 0 0 0 999px rgb(0 0 0 / 0.25); pointer-events: none; }
+  .ing__avvia { position: relative; z-index: 2; }
+
+  .ing__esito { position: fixed; inset: 0; z-index: 150; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; text-align: center; }
+  .ing__esito.is-ok { background: var(--blue); color: var(--paper); }
+  .ing__esito.is-warn { background: var(--pink); color: var(--overprint); }
+  .ing__esito.is-ko { background: var(--overprint); color: var(--paper); }
+  .ing__esito-icona { font-size: 9rem; line-height: 0.8; }
+  .ing__esito-titolo { font-size: var(--step-4); }
+  .ing__esito-nome { font-stretch: 112%; font-weight: 800; font-size: var(--step-2); }
+  .ing__avanti { margin-top: 20px; min-width: 200px; }
+
+  .ing__manuale { display: grid; gap: 14px; }
+  .ing__risultati { display: grid; gap: 8px; }
+  .ing__risultati li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); font-weight: 700; }
+  .ing__fai { min-height: 44px; padding-block: 0.5em; }
+  .ing__cambia { border: 0; background: none; color: inherit; font: inherit; font-weight: 700; cursor: pointer; justify-self: start; }
+</style>

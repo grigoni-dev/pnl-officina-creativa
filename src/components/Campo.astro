@@ -1,0 +1,35 @@
+---
+/** One labelled input of a long form, with its hint or its error. */
+export type DefCampo = {
+  nome: string;
+  label: string;
+  type?: 'text' | 'date' | 'email' | 'tel';
+  auto?: string;
+  mode?: 'text' | 'numeric' | 'email' | 'tel';
+  cols?: number;          // out of 6
+  half?: boolean;         // stays half-width on phones
+  hint?: string;
+  max?: number;
+  maiuscolo?: boolean;
+  required?: boolean;
+};
+interface Props { def: DefCampo; value?: string; errore?: string }
+const { def: f, value = '', errore } = Astro.props;
+---
+<div class:list={['field', f.half && 'field--half', f.maiuscolo && 'field--maiuscolo', errore && 'field--errore']} style={`--span:${f.cols ?? 3}`}>
+  <label for={f.nome}>{f.label}</label>
+  <input
+    id={f.nome}
+    name={f.nome}
+    type={f.type ?? 'text'}
+    value={value}
+    autocomplete={f.auto}
+    inputmode={f.mode}
+    required={f.required !== false}
+    maxlength={f.max ?? 120}
+    autocapitalize={f.maiuscolo ? 'characters' : undefined}
+    aria-invalid={errore ? 'true' : undefined}
+    aria-describedby={errore ? `${f.nome}-err` : f.hint ? `${f.nome}-hint` : undefined}
+  />
+  {errore ? <p class="field__err" id={`${f.nome}-err`}>{errore}</p> : f.hint && <p class="field__hint" id={`${f.nome}-hint`}>{f.hint}</p>}
+</div>

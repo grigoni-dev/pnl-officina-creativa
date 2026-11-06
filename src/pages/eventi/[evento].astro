@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import EventoScheda from '../../components/EventoScheda.astro';
+import { etichettaIngresso, eventoDaSlug, giornoEvento, orario } from '../../lib/eventi';
+import { cachePubblica } from '../../lib/sito';
+
+export const prerender = false;
+const e = await eventoDaSlug(Astro.params.evento ?? '');
+if (!e) return new Response(null, { status: 404 });
+cachePubblica(Astro.response.headers);
+const descrizione = `${giornoEvento(e.inizio)}, ${orario(e)} · ${e.luogoNome} · ${etichettaIngresso(e)}${e.accesso === 'soci' ? ' · Solo soci' : ''}`;
+---
+<Base title={`${e.titolo} · PNL Officina Creativa`} description={descrizione}>
+  <Nav />
+  <main id="contenuto" class="evp">
+    <div class="wrap">
+      <a class="link evp__back" href="/eventi">← Tutti gli eventi</a>
+      <EventoScheda evento={e} dettaglio titoloTag="h1" />
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .evp { padding-block: clamp(28px, 4vw, 56px) clamp(72px, 10vw, 144px); }
+  .evp__back { display: inline-block; margin-bottom: clamp(24px, 3vw, 40px); }
+</style>
