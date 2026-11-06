@@ -39,9 +39,11 @@
 html { -webkit-text-size-adjust: 100%; scroll-padding-top: 96px; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
+/* paper tooth: a faint fibre noise in the sheet itself, under the content (never over photos) */
 body {
   margin: 0;
-  background: var(--paper);
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .2 0 0 0 0 .35 0 0 0 .18 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
   color: var(--blue);
   font-family: var(--font);
   font-size: var(--step-0);
@@ -51,18 +53,6 @@ body {
   caret-color: var(--blue);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-}
-
-/* paper tooth: a faint fibre noise over the whole sheet */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 100;
-  opacity: 0.32;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .2 0 0 0 0 .2 0 0 0 0 .35 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 ::selection { background: var(--pink); color: var(--overprint); }
@@ -203,55 +193,9 @@ a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 2p
 }
 .link:hover { background-size: 0% 2px; background-position: 100% 100%; }
 
-/* ---------- prints: photographs as two-plate riso ----------
-   See Print.astro. Each .ink is grey image + dot screen (screen blend),
-   thresholded by contrast() into real halftone dots, then inked by an SVG
-   filter that maps black to the ink and white to paper (or to nothing). */
-
-.print {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: var(--paper);
-}
-.ink {
-  position: absolute;
-  inset: 0;
-  isolation: isolate;
-  overflow: hidden;
-}
-.ink img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* pre-darken so that screen + threshold gives dot area ∝ darkness */
-  filter: grayscale(1) contrast(1.1) brightness(0.6);
-}
-.ink::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* dot coverage: black ≈ full cell, mid grey ≈ 45%, white none */
-  background: radial-gradient(circle farthest-corner at center, #000 0%, #a0a0a0 100%) 0 0 / var(--cell, 5px) var(--cell, 5px);
-  mix-blend-mode: screen;
-}
-.ink--blue { filter: contrast(14) url(#ink-blue); }
-.ink--pink {
-  --cell: 6px;
-  filter: contrast(14) url(#ink-pink);
-  mix-blend-mode: multiply;
-  transform: translate(7px, 5px);
-  transition: transform 600ms var(--ease-out);
-}
-/* pink prints only the deepest shadows (about the darkest quarter), at a low dot ceiling */
-.ink--pink img { filter: grayscale(1) contrast(1.2) brightness(1.9); }
-.ink--pink::after { background-image: radial-gradient(circle farthest-corner at center, #000 0%, #d8d8d8 100%); }
-.ink--pink::after { background-position: 2px 3px; }
-.hero__photo .ink--blue { --cell: 4px; }
-.reg-host:hover .ink--pink,
-.reg-host:focus-visible .ink--pink,
-.reg-host:focus-within .ink--pink { transform: translate(0, 0); }
+/* ---------- photographs: clean, filling their frame ---------- */
+.print { position: relative; overflow: hidden; background: var(--blue); }
+.print img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ---------- stamp for stand-ins ---------- */
 .stamp {

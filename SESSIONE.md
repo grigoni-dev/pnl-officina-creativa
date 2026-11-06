@@ -22,7 +22,10 @@
 
 ## Portale, eventi e biglietti (6–7 novembre)
 Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
-- **Soci:** si riconoscono da email o telefono, non dal numero di tessera. Il telefono è obbligatorio. La lista esistente (Data/Ora, Email, Nome, Cognome, Telefono) si importa da `/admin` → Soci; chi viene importato è segnato "dati incompleti".
+- **Soci:** si riconoscono da email o telefono, non dal numero di tessera. Il telefono è obbligatorio. La lista esistente (Data/Ora, Email, Nome, Cognome, Telefono) si importa da `/admin` → Soci; chi viene importato è segnato "manca la data di nascita".
+- **Dati del socio** (7 novembre): solo nome, cognome, data di nascita, email, telefono. Tolti codice fiscale, luogo di nascita e indirizzo; la migrazione `0002` adegua un database creato prima.
+- **Foto pulite** (7 novembre): niente più retinatura riso né grana sopra le immagini. **Iscrizione + biglietto** con una sola spunta: usa i dati dell'acquirente; la data di nascita si chiede dopo.
+- **Nota tecnica:** dopo l'aggiornamento ad Astro 7 il server di sviluppo va riavviato. `astro dev` ora gira in background: si controlla con `npx astro dev status` e si ferma con `npx astro dev stop`.
 - **Eventi** (`/eventi`, `/eventi/<slug>`, sezione in home):
   - ognuno ha locandina, data, orari, luogo, accesso pubblico o solo soci, ingresso libero o a pagamento, posti, massimo per ordine;
   - li gestisce `/admin` → Eventi, dove ci sono anche rimborsi, annullo dell'evento e lista nomi in CSV.
@@ -49,7 +52,7 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.
 2. Dominio, per le email (Resend) e per il sito.
-3. Completare e far verificare l'informativa privacy; confermare i campi del libro soci e la regola "solo maggiorenni" con lo statuto.
+3. Completare e far verificare l'informativa privacy; confermare la regola "solo maggiorenni" con lo statuto.
 4. Sentire il commercialista sui biglietti venduti a chi non è socio (IVA, corrispettivi, SIAE).
 
 ## Materiale che manca dal cliente

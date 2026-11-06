@@ -32,7 +32,7 @@ if (Astro.request.method === 'POST') {
       }
     } catch (err) {
       if (err instanceof GiaSocio) {
-        errori.codice_fiscale = 'Con questo codice fiscale risulti già socio. Se non trovi la tessera, scrivici.';
+        errori.email = 'Con questa email o questo telefono risulti già socio: non serve iscriversi di nuovo. Puoi controllare su /verifica.';
       } else {
         console.error('tesseramento', err);
         errori.generale = err instanceof NonConfigurato

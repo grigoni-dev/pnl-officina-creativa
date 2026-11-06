@@ -253,3 +253,9 @@ A rotated rubber-stamp mark (2px pink border, overprint uppercase text on paper)
 - **Album cover** (`AlbumCard.astro`): the cover photo printed as riso (4:5, 3px blue frame) on two offset paper sheets that fan out on hover, the photo count on a blue tag, then title, date and place. The same card is used on the home strip (latest 3) and on `/eventi`.
 - **Album page** (`/eventi/[album]`): display title, facts (Quando / Dove / Foto), then a contact sheet of square crops **in true colour**. The riso treatment is for covers only: inside an album people look for themselves, so photos stay unprinted.
 - **Viewer**: native `<dialog>` drenched in blue, photo contained, a bottom bar with counter and 52px square paper-outlined buttons (prev, next, download, close). Arrow keys, swipe and Esc work. Without JS a thumbnail links to the full-size file.
+
+## Photographs are clean (changed 7 Nov 2026)
+
+- The client asked for every image without overlays. The two-plate riso halftone on photos is **removed everywhere**: hero, album covers, event posters, album pages. `Print.astro` now renders the photo as-is, `object-fit: cover`, on a blue backing while it loads.
+- The paper grain moved from a fixed overlay on top of the page into the `body` background, so it sits under the content and never over a photo. Coloured floods (pink, blue sections) have no grain.
+- The riso language stays in type and controls: misregistered display headings (`Reg`), the two-plate buttons, the pink highlight on "fare schifo".

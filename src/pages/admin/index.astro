@@ -169,7 +169,7 @@ import Base from '../../layouts/Base.astro';
       </div>
 
       <div class="adm-filtri">
-        <div class="field"><label for="s-cerca">Cerca</label><input id="s-cerca" type="search" placeholder="Nome, email, telefono, codice fiscale, numero" /></div>
+        <div class="field"><label for="s-cerca">Cerca</label><input id="s-cerca" type="search" placeholder="Nome, email, telefono, numero" /></div>
         <div class="field">
           <label for="s-stato">Stato</label>
           <select id="s-stato">
@@ -179,7 +179,7 @@ import Base from '../../layouts/Base.astro';
             <option value="">Tutti</option>
           </select>
         </div>
-        <label class="check"><input type="checkbox" id="s-incompleti" /> <span>Solo dati incompleti</span></label>
+        <label class="check"><input type="checkbox" id="s-incompleti" /> <span>Solo senza data di nascita</span></label>
       </div>
       <p class="adm-conteggio-soci label"></p>
       <div class="adm-tab-wrap">
@@ -648,12 +648,12 @@ import Base from '../../layouts/Base.astro';
     const st = $<HTMLSelectElement>('#s-stato').value;
     const inc = $<HTMLInputElement>('#s-incompleti').checked;
     const righe = soci.filter((s) => (!st || s.stato === st) && (!inc || !s.dati_completi) &&
-      (!q || [s.nome, s.cognome, s.email, s.telefono, s.codice_fiscale, s.numero].join(' ').toLowerCase().includes(q)));
+      (!q || [s.nome, s.cognome, s.email, s.telefono, s.numero].join(' ').toLowerCase().includes(q)));
     $('.adm-conteggio-soci').textContent = `${righe.length} su ${soci.length}`;
     $('.adm-soci tbody').innerHTML = righe.map((s) => `
       <tr>
         <td>${s.numero ?? '—'}</td>
-        <td>${esc(s.nome)} ${esc(s.cognome)}${s.dati_completi ? '' : ' <span class="adm-badge">dati incompleti</span>'}</td>
+        <td>${esc(s.nome)} ${esc(s.cognome)}${s.dati_completi ? '' : ' <span class="adm-badge">manca la data di nascita</span>'}</td>
         <td>${esc(s.email ?? '—')}</td>
         <td>${esc(s.telefono ?? '—')}</td>
         <td><span class="adm-badge ${s.stato === 'attivo' ? 'is-on' : ''}">${STATI[s.stato]}</span></td>
@@ -676,7 +676,7 @@ import Base from '../../layouts/Base.astro';
   });
 
   $('.adm-csv').addEventListener('click', () => {
-    const col = ['numero', 'stato', 'cognome', 'nome', 'email', 'telefono', 'data_nascita', 'luogo_nascita', 'codice_fiscale', 'indirizzo', 'cap', 'comune', 'provincia', 'iscritto_at', 'receduto_at', 'origine', 'dati_completi'];
+    const col = ['numero', 'stato', 'cognome', 'nome', 'data_nascita', 'email', 'telefono', 'iscritto_at', 'receduto_at', 'origine'];
     scaricaCsv(`libro-soci-${new Date().toISOString().slice(0, 10)}.csv`, col, soci.filter((s) => s.stato !== 'in_attesa'));
   });
 

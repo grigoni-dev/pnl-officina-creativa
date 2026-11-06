@@ -3,7 +3,7 @@ import { quota } from '../data/site';
 import { contattoValido, emailValida, normEmail, socioDaContatto, telefonoValido } from './contatti';
 import { emailBiglietti, inviaEmail } from './email';
 import type { Evento } from './eventi';
-import { attivaSocio, leggiModulo, rigaQuota, salvaSocioInAttesa, valida, GiaSocio, type ModuloSocio } from './soci';
+import { attivaSocio, rigaQuota, salvaSocioInAttesa, GiaSocio, type ModuloSocio } from './soci';
 import { getStripe, paymentIntentId, scadenzaCheckout } from './stripe';
 import { supabaseServizio } from './supabase';
 
@@ -13,7 +13,7 @@ import { supabaseServizio } from './supabase';
  *   quantita                                 1..max
  *   per_me=si                                ticket 1 is the buyer's
  *   b{i}_nome, b{i}_cognome, b{i}_contatto   each ticket (contatto: members-only events)
- *   iscriviti=si + s_*                       buyer joins in the same payment (members-only events)
+ *   iscriviti=si                             buyer joins in the same payment, with the details above (members-only events)
  *   privacy=si
  */
 
@@ -38,10 +38,16 @@ export function leggiOrdine(form: FormData, max: number): ModuloOrdine {
   const biglietti = Array.from({ length: quantita }, (_, i) => ({ nome: s(`b${i}_nome`), cognome: s(`b${i}_cognome`), contatto: s(`b${i}_contatto`) }));
   if (perMe) biglietti[0] = { nome: acquirente.nome, cognome: acquirente.cognome, contatto: acquirente.email };
   const iscriviti = form.get('iscriviti') === 'si';
-  const socio = leggiModulo(form, 's_');
-  // The buyer's own details complete the member form.
-  Object.assign(socio.dati, { nome: acquirente.nome, cognome: acquirente.cognome, email: acquirente.email, telefono: acquirente.telefono });
-  return { acquirente, quantita, perMe, biglietti, iscriviti, socio, privacy: form.get('privacy') === 'si' };
+  const privacy = form.get('privacy') === 'si';
+  // Joining from here takes just the tick: the buyer's details become the member's,
+  // the tick accepts the statute, the privacy consent below covers the member register.
+  // The date of birth stays empty and is asked later (the member shows as "manca la data di nascita").
+  const socio: ModuloSocio = {
+    dati: { nome: acquirente.nome, cognome: acquirente.cognome, data_nascita: '', email: acquirente.email, telefono: acquirente.telefono },
+    statuto: iscriviti,
+    privacy,
+  };
+  return { acquirente, quantita, perMe, biglietti, iscriviti, socio, privacy };
 }
 
 export function validaOrdine(m: ModuloOrdine, e: Evento): Errori {
@@ -57,7 +63,6 @@ export function validaOrdine(m: ModuloOrdine, e: Evento): Errori {
     if (!b.cognome) err[`b${i}_cognome`] = 'Campo obbligatorio';
     if (e.accesso === 'soci' && !contattoValido(b.contatto)) err[`b${i}_contatto`] = b.contatto ? 'Email o telefono non valido' : 'Serve l’email o il telefono con cui è iscritto';
   });
-  if (m.iscriviti) Object.assign(err, valida(m.socio, 's_'));
   if (!m.privacy) err.privacy = 'Serve il consenso per usare i dati dei biglietti';
   return err;
 }
@@ -83,14 +88,14 @@ export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Prom
         socioIds[0] = (await socioDaContatto(m.acquirente.email)) ?? (await socioDaContatto(m.acquirente.telefono));
         if (!socioIds[0]) {
           if (!m.iscriviti) {
-            err.non_socio = 'Non risulti socio con questa email o questo telefono. Puoi iscriverti qui sotto e pagare tessera e biglietto insieme.';
+            err.non_socio = 'Non risulti socio con questa email o questo telefono. Spunta “Mi iscrivo adesso” qui sotto: paghi tessera e biglietto insieme, con i dati che hai già scritto.';
           } else {
             try {
               socioNuovo = await salvaSocioInAttesa(m.socio.dati);
               socioIds[0] = socioNuovo;
             } catch (x) {
               if (!(x instanceof GiaSocio)) throw x;
-              err.s_codice_fiscale = 'Con questi dati risulti già socio: usa l’email o il telefono con cui ti sei iscritto.';
+              err.non_socio = 'Con questa email o questo telefono risulti già socio, ma non risulta attivo: scrivici e sistemiamo.';
             }
           }
         }

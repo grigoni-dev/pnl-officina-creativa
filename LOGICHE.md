@@ -14,10 +14,10 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 
 **Soci che esistono già.** Dal pannello admin si carica la vostra lista in CSV. Ogni persona diventa socio *attivo* e riceve un numero di tessera progressivo. Di default non le mandiamo nessuna email.
 - La lista ha le colonne **Data/Ora, Email, Nome, Cognome, Telefono**. Si carica il file Excel (.xlsx) o un CSV esportato da Excel. *Data/Ora* diventa la data d'iscrizione.
-- Mancano i dati del libro soci (codice fiscale, nascita, residenza): chi viene importato è segnato **"dati incompleti"**, così si sa a chi chiederli.
+- Alla lista manca la data di nascita: chi viene importato è segnato **"manca la data di nascita"**, così si sa a chi chiederla.
 - Se una riga ha la stessa email o lo stesso telefono di un socio già presente, viene saltata e segnalata.
 
-**Iscrizione online.** Come ora: si compila il modulo, si pagano 5 € su Stripe e arriva l'email con la tessera.
+**Iscrizione online.** Si chiedono solo **nome, cognome, data di nascita, email e telefono** (online solo maggiorenni), si pagano 5 € su Stripe e arriva l'email con la tessera.
 
 **Verifica tessera** (`/verifica`). Si inserisce email o telefono e il sito risponde solo *attiva* o *non trovata*. Non mostra mai nomi né altri dati. Il limite è di 20 richieste ogni 10 minuti per connessione.
 - Da sapere: chi conosce l'email o il telefono di qualcuno può scoprire se quella persona è socia. Per un'associazione culturale è un rischio basso, ma va detto anche nell'informativa.
@@ -57,7 +57,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 1. Chi compra mette i suoi dati: nome, cognome, email e telefono.
 2. Sceglie quanti biglietti, fino al massimo per ordine. **Ogni biglietto è nominativo**: nome e cognome di chi entra.
 3. **Se l'evento è riservato ai soci**, per ogni biglietto serve anche l'email o il telefono di quella persona, e il sito controlla che sia socia attiva.
-   - **Se chi compra non è socio**, gli proponiamo di iscriversi subito: compila il modulo socio e paga **tessera + biglietto insieme**, con un solo pagamento.
+   - **Se chi compra non è socio**, basta una spunta, "Mi iscrivo adesso": diventa socio con i dati che ha già scritto (nome, cognome, email, telefono) e paga **tessera + biglietto insieme**, con un solo pagamento. La data di nascita gli verrà chiesta dopo: nel pannello risulta "manca la data di nascita".
    - Gli amici per cui compra devono già essere soci. Se uno non lo è, il sito lo dice e quel biglietto non si può comprare.
 4. Pagamento su Stripe, come per la tessera (carta, Apple Pay, Google Pay, PayPal se attivato). Per le prenotazioni gratuite non c'è nessun pagamento: si conferma e basta.
 5. Arriva un'email con **un QR per ogni biglietto**. Ogni QR è anche una pagina `/biglietto/<codice>` che si può mostrare dal telefono.

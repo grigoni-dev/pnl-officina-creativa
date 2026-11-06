@@ -61,18 +61,9 @@ create table soci (
   cognome text not null,
   email text,
   telefono text,
-  -- dati del libro soci: obbligatori online, possono mancare per i soci importati
+  -- chiesta in /tesseramento; manca per i soci importati e per chi si iscrive comprando un biglietto
   data_nascita date,
-  luogo_nascita text,
-  codice_fiscale text,
-  indirizzo text,
-  cap text,
-  comune text,
-  provincia text,
-  dati_completi boolean generated always as (
-    codice_fiscale is not null and data_nascita is not null and luogo_nascita is not null
-    and indirizzo is not null and cap is not null and comune is not null and provincia is not null
-  ) stored,
+  dati_completi boolean generated always as (data_nascita is not null and email is not null and telefono is not null) stored,
   consenso_privacy_at timestamptz,
   iscritto_at timestamptz not null default now(),
   stripe_session_id text,
@@ -84,9 +75,8 @@ create table soci (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (email is not null or telefono is not null),
-  check (origine = 'import' or (dati_completi and consenso_privacy_at is not null and email is not null and telefono is not null))
+  constraint soci_online_completi check (origine = 'import' or (consenso_privacy_at is not null and email is not null and telefono is not null))
 );
-create unique index soci_codice_fiscale_key on soci (upper(codice_fiscale)) where codice_fiscale is not null;
 create index soci_email_idx on soci (email);
 create index soci_telefono_idx on soci (telefono);
 create index soci_stato_idx on soci (stato);
@@ -96,7 +86,6 @@ language plpgsql as $$
 begin
   new.email := norm_email(new.email);
   new.telefono := norm_tel(new.telefono);
-  new.codice_fiscale := nullif(upper(btrim(new.codice_fiscale)), '');
   return new;
 end $$;
 create trigger soci_normalizza before insert or update on soci

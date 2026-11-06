@@ -5,7 +5,7 @@ Il sito gira su **Vercel**. I dati (soci, album, foto) stanno su **Supabase**, i
 ## 1. Supabase (database, foto, login admin)
 
 1. Crea un progetto su supabase.com, **regione Europa** (Francoforte) per il GDPR. Annota la password del database.
-2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Crea:
+2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Poi fai lo stesso con `0002_libro_soci_ridotto.sql`: se avevi già eseguito una versione precedente dello 0001 adegua la tabella dei soci, altrimenti non cambia nulla. Insieme creano:
    - le tabelle di soci, eventi, ordini, biglietti, album, foto e staff;
    - le regole di accesso;
    - i bucket `album` e `locandine`;

@@ -10,30 +10,14 @@ import { supabaseServizio } from './supabase';
  * by the ticket form when someone joins and buys in one go)
  * ------------------------------------------------------------------------- */
 
-export const CAMPI = [
-  'nome', 'cognome', 'data_nascita', 'luogo_nascita', 'codice_fiscale',
-  'indirizzo', 'cap', 'comune', 'provincia', 'email', 'telefono',
-] as const;
+/** What the association keeps for each member (LOGICHE.md §1). */
+export const CAMPI = ['nome', 'cognome', 'data_nascita', 'email', 'telefono'] as const;
 export type Campo = (typeof CAMPI)[number];
 export type DatiSocio = Record<Campo, string>;
 export type Errori = Partial<Record<string, string>>;
 export type ModuloSocio = { dati: DatiSocio; privacy: boolean; statuto: boolean };
 
 const ETA_MINIMA = 18;
-
-/** Italian codice fiscale: format and check character. Omocodia letters are accepted. */
-export function codiceFiscaleValido(cf: string): boolean {
-  const s = cf.toUpperCase();
-  if (!/^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$/.test(s)) return false;
-  const dispari = [1, 0, 5, 7, 9, 13, 15, 17, 19, 21, 2, 4, 18, 20, 11, 3, 6, 8, 12, 14, 16, 10, 22, 25, 24, 23];
-  let somma = 0;
-  for (let i = 0; i < 15; i++) {
-    const c = s.charCodeAt(i);
-    const v = c >= 48 && c <= 57 ? c - 48 : c - 65;
-    somma += i % 2 === 0 ? dispari[v] : v;
-  }
-  return String.fromCharCode(65 + (somma % 26)) === s[15];
-}
 
 const etaAl = (nascita: Date, oggi = new Date()) => {
   let e = oggi.getFullYear() - nascita.getFullYear();
@@ -49,8 +33,6 @@ export function leggiModulo(form: FormData, p = ''): ModuloSocio {
   const dati = Object.fromEntries(
     CAMPI.map((c) => [c, String(form.get(p + c) ?? '').trim().replace(/\s+/g, ' ')]),
   ) as DatiSocio;
-  dati.codice_fiscale = dati.codice_fiscale.replace(/\s/g, '').toUpperCase();
-  dati.provincia = dati.provincia.toUpperCase();
   dati.email = normEmail(dati.email);
   return { dati, privacy: form.get(p + 'privacy') === 'si', statuto: form.get(p + 'statuto') === 'si' };
 }
@@ -66,9 +48,6 @@ export function valida({ dati, privacy, statuto }: ModuloSocio, p = ''): Errori 
     if (Number.isNaN(d.getTime()) || d.getFullYear() < 1900) e[p + 'data_nascita'] = 'Data non valida';
     else if (etaAl(d) < ETA_MINIMA) e[p + 'data_nascita'] = 'L’iscrizione online è riservata ai maggiorenni: scrivici e ti diciamo come fare';
   }
-  if (dati.codice_fiscale && !e[p + 'codice_fiscale'] && !codiceFiscaleValido(dati.codice_fiscale)) e[p + 'codice_fiscale'] = 'Codice fiscale non valido: controlla lettere e numeri';
-  if (dati.cap && !/^\d{5}$/.test(dati.cap)) e[p + 'cap'] = 'Il CAP ha 5 cifre';
-  if (dati.provincia && !/^[A-Z]{2}$/.test(dati.provincia)) e[p + 'provincia'] = 'Sigla di 2 lettere, per esempio TV';
   if (dati.email && !emailValida(dati.email)) e[p + 'email'] = 'Email non valida';
   if (dati.telefono && !telefonoValido(dati.telefono)) e[p + 'telefono'] = 'Numero non valido';
   if (!privacy) e[p + 'privacy'] = 'Serve il consenso per registrare i tuoi dati nel libro soci';
@@ -84,29 +63,27 @@ export class GiaSocio extends Error {}
 
 /**
  * Saves the member as `in_attesa`, or refreshes an earlier unfinished signup
- * with the same codice fiscale. Throws GiaSocio if the codice fiscale, email
- * or phone already belong to an active member.
+ * with the same email. Throws GiaSocio if the email or phone already belong
+ * to an active member.
  */
 export async function salvaSocioInAttesa(dati: DatiSocio): Promise<string> {
   const sb = supabaseServizio();
 
   // Separate parameterised lookups: never splice user input into a PostgREST filter string.
-  const [perCf, perEmail, perTel] = await Promise.all([
-    sb.from('soci').select('id').eq('stato', 'attivo').eq('codice_fiscale', dati.codice_fiscale).limit(1),
-    socioDaContatto(dati.email),
-    socioDaContatto(normTel(dati.telefono)),
-  ]);
-  if (perCf.error) throw perCf.error;
-  if (perCf.data?.length || perEmail || perTel) throw new GiaSocio();
+  const [perEmail, perTel] = await Promise.all([socioDaContatto(dati.email), socioDaContatto(normTel(dati.telefono))]);
+  if (perEmail || perTel) throw new GiaSocio();
 
   const riga = {
     ...dati,
+    data_nascita: dati.data_nascita || null,
     stato: 'in_attesa',
     origine: 'online',
     consenso_privacy_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  const { data: esistente, error: e1 } = await sb.from('soci').select('id').eq('codice_fiscale', dati.codice_fiscale).maybeSingle();
+  const { data: esistente, error: e1 } = await sb
+    .from('soci').select('id').eq('stato', 'in_attesa').eq('origine', 'online').eq('email', dati.email)
+    .order('created_at', { ascending: false }).limit(1).maybeSingle();
   if (e1) throw e1;
   if (esistente) {
     const { error } = await sb.from('soci').update(riga).eq('id', esistente.id);
