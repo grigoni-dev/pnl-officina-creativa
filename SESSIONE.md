@@ -57,7 +57,7 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 
 ## Materiale che manca dal cliente
 - Il logo (ora c'è un wordmark di solo testo).
-- Altre foto degli eventi: quella della home è vostra (Tommaso Tadiello); la vecchia foto stock resta in `folla_2.jpg`, non usata.
+- Altre foto degli eventi: quella della home è vostra (nessun credito al fotografo: le foto sono di autori diversi); la vecchia foto stock resta in `folla_2.jpg`, non usata.
 - Gli album veri: per ogni evento una cartella in `src/album/` con le foto e un `album.json` (titolo, data, luogo). Poi vanno cancellate le cartelle `segnaposto-*`.
 - Il permesso di pubblicare le foto degli eventi privati: chi c'era sa di essere online? Va valutato se servono album non indicizzati o protetti.
 - L'email vera (ora è `.example`, con il timbro "Indirizzo provvisorio").
