@@ -22,6 +22,13 @@ export type Checkout = {
   transactions?: { id: string; status: string; amount: number }[];
 };
 
+/** A SumUp API error, with its HTTP status (404 = no such checkout). */
+export class ErroreSumUp extends Error {
+  constructor(public status: number, messaggio: string) {
+    super(messaggio);
+  }
+}
+
 const base = () => (SUMUP_API_URL || 'https://api.sumup.com').replace(/\/$/, '');
 
 async function chiama<T>(metodo: string, path: string, body?: unknown): Promise<T> {
@@ -32,7 +39,7 @@ async function chiama<T>(metodo: string, path: string, body?: unknown): Promise<
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const testo = await res.text();
-  if (!res.ok) throw new Error(`SumUp ${metodo} ${path} → ${res.status}: ${testo.slice(0, 300)}`);
+  if (!res.ok) throw new ErroreSumUp(res.status, `SumUp ${metodo} ${path} → ${res.status}: ${testo.slice(0, 300)}`);
   return (testo ? JSON.parse(testo) : {}) as T;
 }
 

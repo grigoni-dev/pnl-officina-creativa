@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { completaPagamento, pagamentoScaduto } from '../../lib/pagamenti';
 import { indirizzoSito } from '../../lib/sito';
-import { idCheckoutValido, leggiCheckout, leggiRiferimento } from '../../lib/sumup';
+import { ErroreSumUp, idCheckoutValido, leggiCheckout, leggiRiferimento } from '../../lib/sumup';
 
 export const prerender = false;
 
@@ -22,6 +22,8 @@ export const POST: APIRoute = async ({ request, url }) => {
     if (c.status === 'PAID') await completaPagamento(c, indirizzoSito(url));
     else if (c.status === 'EXPIRED') await pagamentoScaduto(c);
   } catch (err) {
+    // A checkout SumUp doesn't know: nothing to do, and nothing worth retrying.
+    if (err instanceof ErroreSumUp && err.status === 404) return new Response(null, { status: 204 });
     console.error('sumup-webhook', id, err);
     return new Response(null, { status: 500 });
   }
