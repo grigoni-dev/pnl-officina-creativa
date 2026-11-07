@@ -4,28 +4,38 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Reg from '../../components/Reg.astro';
 import EventoScheda from '../../components/EventoScheda.astro';
-import { prossimiEventi } from '../../lib/eventi';
+import EventoPassato from '../../components/EventoPassato.astro';
+import { eventiPassati, prossimiEventi } from '../../lib/eventi';
 import { cachePubblica } from '../../lib/sito';
 
 export const prerender = false;
-const eventi = await prossimiEventi(Astro.url.searchParams.get('demo'));
+const [eventi, passati] = await Promise.all([prossimiEventi(Astro.url.searchParams.get('demo')), eventiPassati()]);
 cachePubblica(Astro.response.headers);
 ---
-<Base title="Prossimi eventi · PNL Officina Creativa" description="I prossimi eventi di PNL Officina Creativa: date, orari, luoghi e biglietti.">
+<Base title="Eventi · PNL Officina Creativa" description="Gli eventi di PNL Officina Creativa: i prossimi, con date, luoghi e biglietti, e quelli passati.">
   <Nav />
   <main id="contenuto" class="evs">
     <div class="wrap">
       <header class="evs__head">
-        <Reg as="h1" class="display h1" text="Prossimi eventi" />
+        <Reg as="h1" class="display h1" text="Eventi" />
       </header>
+      <h2 class="label evs__sez">Prossimi</h2>
       {eventi.length === 0 && (
         <div class="evs__vuoto">
           <p class="lede">Nessun evento in programma, per ora. Il prossimo lo annunciamo qui e sui social.</p>
-          <a class="btn btn--paper" href="/album">Guarda le foto di quelli passati</a>
         </div>
       )}
-      {eventi.length === 1 && <EventoScheda evento={eventi[0]} grande />}
-      {eventi.length > 1 && eventi.map((e) => <EventoScheda evento={e} />)}
+      {eventi.length === 1 && <EventoScheda evento={eventi[0]} grande titoloTag="h3" />}
+      {eventi.length > 1 && eventi.map((e) => <EventoScheda evento={e} titoloTag="h3" />)}
+
+      {passati.length > 0 && (
+        <section class="evs__passati" aria-labelledby="passati-t">
+          <h2 id="passati-t" class="label evs__sez">Passati</h2>
+          <ol class="evs__griglia">
+            {passati.map((e) => <li><EventoPassato evento={e} /></li>)}
+          </ol>
+        </section>
+      )}
     </div>
   </main>
   <Footer />
@@ -34,5 +44,11 @@ cachePubblica(Astro.response.headers);
 <style>
   .evs { padding-block: clamp(36px, 5vw, 72px) clamp(72px, 10vw, 144px); }
   .evs__head { padding-bottom: clamp(28px, 3.5vw, 48px); }
-  .evs__vuoto { display: grid; gap: 28px; justify-items: start; border-top: var(--rule) solid var(--blue); padding-top: 28px; }
+  .evs__sez { font-size: var(--step-0); padding-bottom: 12px; margin-bottom: clamp(20px, 2.5vw, 32px); border-bottom: var(--rule) solid var(--blue); }
+  .evs__passati { margin-top: clamp(64px, 8vw, 112px); }
+  .evs__sez + :global(.ev) { border-top: 0; padding-top: 0; }
+  .evs__griglia { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(28px, 3vw, 44px) clamp(18px, 2vw, 32px); }
+  @media (max-width: 1080px) { .evs__griglia { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 680px) { .evs__griglia { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .evs__vuoto { display: grid; gap: 28px; justify-items: start; }
 </style>

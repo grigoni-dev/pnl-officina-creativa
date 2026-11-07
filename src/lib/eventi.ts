@@ -87,6 +87,23 @@ export async function prossimiEventi(demo: string | null = null): Promise<Evento
   return Promise.all((data as Riga[]).map(toEvento));
 }
 
+/** Events that took place (published, already ended), most recent first. Cancelled ones are left out. */
+export async function eventiPassati(): Promise<Evento[]> {
+  const sb = supabasePubblico();
+  if (!sb) return [];
+  const { data, error } = await sb
+    .from('eventi')
+    .select(COLONNE)
+    .eq('stato', 'pubblicato')
+    .lte('fine', new Date().toISOString())
+    .order('inizio', { ascending: false });
+  if (error) {
+    console.error('eventiPassati', error);
+    return [];
+  }
+  return Promise.all((data as Riga[]).map((r) => toEvento({ ...r, posti: null })));
+}
+
 /** One published or cancelled event, past or future. */
 export async function eventoDaSlug(slug: string): Promise<Evento | null> {
   const sb = supabasePubblico();

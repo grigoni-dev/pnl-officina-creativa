@@ -1,0 +1,35 @@
+---
+import { type Evento, anno } from '../lib/eventi';
+
+/** A past event, compact: poster thumbnail, date, title, place, link to its photos. */
+interface Props { evento: Evento }
+const { evento: e } = Astro.props;
+const tz = { timeZone: 'Europe/Rome' } as const;
+const giorno = e.inizio.toLocaleDateString('it-IT', { day: 'numeric', ...tz });
+const mese = e.inizio.toLocaleDateString('it-IT', { month: 'short', ...tz }).replace('.', '');
+---
+<article class="evp">
+  <a class="evp__poster" href={`/eventi/${e.slug}`} tabindex="-1" aria-hidden="true">
+    {e.locandina
+      ? <img src={e.locandina.src as string} alt="" width={e.locandina.width} height={e.locandina.height} loading="lazy" decoding="async" />
+      : <span class="evp__vuoto display">{giorno}<small>{mese}</small></span>}
+  </a>
+  <p class="label evp__data">{giorno} {mese} {anno(e.inizio)}<span class="evp__luogo"> · {e.luogoNome}</span></p>
+  <h3 class="evp__titolo"><a href={`/eventi/${e.slug}`}>{e.titolo}</a></h3>
+  {e.albumSlug && <a class="link evp__foto" href={`/album/${e.albumSlug}`}>Guarda le foto</a>}
+</article>
+
+<style>
+  .evp { display: grid; gap: 10px; align-content: start; }
+  .evp__poster { display: block; aspect-ratio: 4 / 5; overflow: hidden; border: var(--rule) solid var(--blue); background: var(--blue); }
+  .evp__poster img { width: 100%; height: 100%; object-fit: cover; transition: transform 520ms var(--ease-out); }
+  .evp:hover .evp__poster img { transform: scale(1.03); }
+  .evp__vuoto { height: 100%; display: grid; place-content: center; text-align: center; color: var(--paper); font-size: clamp(3rem, 6vw, 4.5rem); line-height: 0.85; }
+  .evp__vuoto small { font-size: 0.4em; text-transform: uppercase; }
+  .evp__data { font-size: var(--step--1); border-top: var(--rule) solid var(--blue); padding-top: 8px; }
+  .evp__titolo { font-stretch: 115%; font-weight: 800; font-size: var(--step-1); line-height: 1.1; margin: 0; }
+  .evp__titolo a { text-decoration: none; }
+  .evp__titolo a:hover { text-decoration: underline; text-decoration-thickness: 3px; }
+  @media (max-width: 680px) { .evp__luogo { display: none; } .evp__titolo { font-size: var(--step-0); } }
+  .evp__foto { justify-self: start; font-size: var(--step--1); }
+</style>

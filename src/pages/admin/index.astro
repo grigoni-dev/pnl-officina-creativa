@@ -89,6 +89,7 @@ import Base from '../../layouts/Base.astro';
           <button class="btn" type="submit" name="azione" value="bozza">Salva come bozza</button>
           <button class="btn btn--paper" type="submit" name="azione" value="pubblicato">Salva e pubblica</button>
           <a class="link adm-vedi-evento" target="_blank" hidden>Vedi sul sito ↗</a>
+          <button class="link adm-elimina-evento" type="button" hidden>Elimina evento</button>
         </div>
       </form>
 
@@ -326,6 +327,7 @@ import Base from '../../layouts/Base.astro';
     $('.adm-locandina__img').innerHTML = '';
     $('.adm-vendite').hidden = true;
     $<HTMLAnchorElement>('.adm-vedi-evento').hidden = true;
+    $<HTMLButtonElement>('.adm-elimina-evento').hidden = true;
     if (id === 'nuovo') {
       $('.adm-evento__titolo').textContent = 'Nuovo evento';
       await caricaAlbumSelect(null);
@@ -352,6 +354,7 @@ import Base from '../../layouts/Base.astro';
     const vedi = $<HTMLAnchorElement>('.adm-vedi-evento');
     vedi.href = `/eventi/${data.slug}`;
     vedi.hidden = data.stato === 'bozza';
+    $<HTMLButtonElement>('.adm-elimina-evento').hidden = false;
     await caricaOrdini();
   };
 
@@ -485,6 +488,22 @@ import Base from '../../layouts/Base.astro';
       if (fallito(error, 'Annullamento')) return;
       caricaOrdini();
     }
+  });
+
+  $('.adm-elimina-evento').addEventListener('click', async () => {
+    if (!evento) return;
+    if (!confirm(`Eliminare “${evento.titolo}”? Sparisce dal sito e dal pannello, insieme alla locandina. Non si può annullare.`)) return;
+    const { data: locandina, error } = await sb.rpc('elimina_evento', { p_evento: evento.id });
+    if (error) {
+      if (/ha_vendite/.test(error.message)) {
+        return msg('Questo evento ha biglietti pagati (anche se rimborsati): non si può eliminare, perché quei pagamenti vanno conservati. Puoi annullarlo e rimborsare tutti, oppure salvarlo come bozza per toglierlo dal sito.', true);
+      }
+      return fallito(error, 'Eliminazione evento');
+    }
+    if (locandina) await sb.storage.from('locandine').remove([locandina]);
+    msg(`“${evento.titolo}” eliminato.`);
+    evento = null;
+    location.hash = 'eventi';
   });
 
   $('.adm-annulla-evento').addEventListener('click', async () => {

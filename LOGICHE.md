@@ -52,6 +52,10 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 | Posti finiti | "Esaurito" (disattivato) |
 | Vendita chiusa / evento passato | "Vendite chiuse" |
 
+**Pagina eventi.** `/eventi` mostra prima i **prossimi** (quelli non ancora finiti) e sotto i **passati**, dal più recente, in una griglia compatta con locandina, data, titolo e il link alle foto se c'è un album collegato. Gli eventi annullati non compaiono tra i passati.
+
+**Eliminare un evento.** Dal pannello si elimina un evento solo se non ha mai venduto biglietti: bozze, prove, eventi con soli pagamenti abbandonati. Se ha biglietti pagati, anche rimborsati, resta come registrazione contabile: lo si annulla (con rimborso a tutti) o lo si rimette in bozza per toglierlo dal sito.
+
 ## 3. Biglietti
 
 **Acquisto** (`/eventi/<nome>/biglietti`):
