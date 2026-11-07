@@ -7,7 +7,7 @@ import credits from './photo-credits.json';
  * Finché un valore è null il sito non lo mostra.
  */
 export const contatti = {
-  email: 'ciao@pnl-officinacreativa.example',
+  email: 'pnl.officinacreativa@gmail.com',
   emailProvvisoria: true,
   instagram: null as string | null,
   facebook: null as string | null,

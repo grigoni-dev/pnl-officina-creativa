@@ -16,9 +16,9 @@ export function eventiDemo(modo: string | null): Evento[] {
   };
   const lista: Evento[] = [
     { ...base, id: 'demo-1', slug: 'demo-festa', titolo: 'Festa d’inverno (demo)', locandina: { src: folla.src, width: folla.width, height: folla.height, alt: 'Locandina' },
-      inizio: g(9, 21), fine: g(10, 2), venditeFinoA: g(9, 21), luogoNome: 'Capannone Esempio', accesso: 'soci', ingresso: 'pagamento', prezzoCent: 1000, posti: 150, postiRimasti: 12 },
+      inizio: g(9, 21), fine: g(10, 2), venditeFinoA: g(9, 21), luogoNome: 'Capannone Esempio', accesso: 'soci', ingresso: 'pagamento', prezzoCent: 1000, prevenditaCent: 100, posti: 150, postiRimasti: 12 },
     { ...base, id: 'demo-2', slug: 'demo-aperitivo', titolo: 'Aperitivo di primavera (demo)', locandina: null,
-      inizio: g(30, 18), fine: g(30, 21), venditeFinoA: g(30, 18), luogoNome: 'Giardino Esempio', accesso: 'pubblico', ingresso: 'libero', prezzoCent: null, prenotazione: true, posti: null, postiRimasti: null },
+      inizio: g(30, 18), fine: g(30, 21), venditeFinoA: g(30, 18), luogoNome: 'Giardino Esempio', accesso: 'pubblico', ingresso: 'libero', prezzoCent: null, prevenditaCent: 0, prenotazione: true, posti: null, postiRimasti: null },
   ];
   return modo === 'uno' ? lista.slice(0, 1) : lista;
 }

@@ -37,7 +37,7 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 - **Ingresso** (`/admin/ingresso`): scanner QR dal telefono (jsQR) più ricerca per nome. C'è il ruolo `ingresso`, che vede solo lo scanner.
 - **Album:** spostati su `/album`.
 - **Codice:**
-  - `src/lib/` contiene `soci`, `ordini`, `eventi`, `pagamenti`, `rimborsi`, `contatti`, `email`, `stripe`;
+  - `src/lib/` contiene `soci`, `ordini`, `eventi`, `pagamenti`, `rimborsi`, `contatti`, `email`, `sumup`;
   - le API admin sono in `src/pages/api/admin/`;
   - il pannello è in `src/pages/admin/`.
 - **Astro aggiornato alla 7.4.2:** la 5 aveva vulnerabilità critiche. Node 22 su Vercel.
@@ -47,7 +47,9 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
   - QR generato e riletto;
   - moduli e pagine via HTTP, screenshot desktop e mobile con eventi demo (solo in `npm run dev`).
 
-  **Non provato:** il giro completo con Supabase, Stripe e Resend veri. Vedi `SETUP.md`, sezione 5.
+  **Non provato:** il giro completo con SumUp e Resend veri. Vedi `SETUP.md`, sezione 5.
+
+- **Pagamenti con SumUp** (7 novembre) invece di Stripe, per le commissioni più basse sui piccoli importi. Pagina `/pagamento/<checkout>` con il modulo carta di SumUp; notifiche su `/api/sumup-webhook` (il server rilegge sempre il pagamento da SumUp); rimborsi via API. Migrazione `0003_sumup.sql`: colonne `checkout_id`/`transazione_id` e **diritto di prevendita** facoltativo per evento.
 
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.

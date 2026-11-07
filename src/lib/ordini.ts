@@ -1,10 +1,9 @@
-import type Stripe from 'stripe';
 import { quota } from '../data/site';
 import { contattoValido, emailValida, normEmail, socioDaContatto, telefonoValido } from './contatti';
 import { emailBiglietti, inviaEmail } from './email';
 import type { Evento } from './eventi';
-import { attivaSocio, rigaQuota, salvaSocioInAttesa, GiaSocio, type ModuloSocio } from './soci';
-import { getStripe, paymentIntentId, scadenzaCheckout } from './stripe';
+import { attivaSocio, salvaSocioInAttesa, GiaSocio, type ModuloSocio } from './soci';
+import { creaCheckout, disattivaCheckout } from './sumup';
 import { supabaseServizio } from './supabase';
 
 /**
@@ -75,7 +74,7 @@ export class ErroreOrdine extends Error {
 
 export type Esito = { tipo: 'pagamento'; url: string } | { tipo: 'confermato'; ordineId: string };
 
-/** Checks members, holds the seats and returns where to go next: Stripe, or straight to the tickets. */
+/** Checks members, holds the seats and returns where to go next: the payment page, or straight to the tickets. */
 export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Promise<Esito> {
   const sb = supabaseServizio();
   const socioIds: (string | null)[] = m.biglietti.map(() => null);
@@ -140,63 +139,44 @@ export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Prom
     return { tipo: 'confermato', ordineId: ordine.id };
   }
 
-  const righe: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  if (ordine.importo_cent > 0) {
-    righe.push({
-      quantity: m.quantita,
-      price_data: { currency: 'eur', unit_amount: e.prezzoCent!, product_data: { name: `Biglietto · ${e.titolo}`, description: m.biglietti.map((b) => `${b.nome} ${b.cognome}`).join(', ').slice(0, 300) } },
-    });
-  }
-  if (quotaCent) righe.push(rigaQuota());
-
-  const metadata = { tipo: 'ordine', ordine_id: ordine.id, ...(socioNuovo ? { socio_id: socioNuovo } : {}) };
-  const session = await getStripe().checkout.sessions.create({
-    mode: 'payment',
-    locale: 'it',
-    customer_email: m.acquirente.email,
-    client_reference_id: ordine.id,
-    metadata,
-    payment_intent_data: { description: `${e.titolo} · ${m.quantita} bigliett${m.quantita === 1 ? 'o' : 'i'}${quotaCent ? ' + tessera' : ''}`, metadata },
-    line_items: righe,
-    expires_at: scadenzaCheckout(),
-    success_url: `${sito}/biglietti/grazie?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${sito}/eventi/${e.slug}/biglietti?annullato=${ordine.id}`,
-  });
-  await sb.from('ordini').update({ stripe_session_id: session.id }).eq('id', ordine.id);
-  return { tipo: 'pagamento', url: session.url! };
+  const totale = ordine.importo_cent + (ordine.prevendita_cent ?? 0) + ordine.quota_cent;
+  const descrizione = `${e.titolo} · ${m.quantita} bigliett${m.quantita === 1 ? 'o' : 'i'}${quotaCent ? ' + tessera' : ''}`;
+  const c = await creaCheckout({ tipo: 'o', id: ordine.id, importoCent: totale, descrizione, sito });
+  await sb.from('ordini').update({ checkout_id: c.id }).eq('id', ordine.id);
+  return { tipo: 'pagamento', url: `/pagamento/${c.id}` };
 }
 
 /* ---------------------------------------------------------------------------
  * After payment (webhook or thank-you page, whichever first; idempotent)
  * ------------------------------------------------------------------------- */
 
-export async function completaOrdine(session: Stripe.Checkout.Session, sito: string): Promise<string | null> {
-  if (session.payment_status !== 'paid') return null;
-  const ordineId = session.metadata?.ordine_id;
-  if (!ordineId) throw new Error(`Sessione ${session.id} senza ordine_id`);
+export async function completaOrdine(ordineId: string, checkoutId: string, transazioneId: string | null, sito: string, rilanciaEmail = true): Promise<string> {
   const sb = supabaseServizio();
-  if (session.metadata?.socio_id) await attivaSocio(session.metadata.socio_id, session, sito);
-  const { error } = await sb.rpc('conferma_ordine', { p_ordine: ordineId, p_session: session.id, p_payment_intent: paymentIntentId(session) });
+  const { data: o, error: e0 } = await sb.from('ordini').select('socio_nuovo_id').eq('id', ordineId).single();
+  if (e0) throw e0;
+  if (o.socio_nuovo_id) await attivaSocio(o.socio_nuovo_id, checkoutId, transazioneId, sito, rilanciaEmail);
+  const { error } = await sb.rpc('conferma_ordine', { p_ordine: ordineId, p_checkout: checkoutId, p_transazione: transazioneId });
   if (error) throw error;
-  await inviaBigliettiUnaVolta(ordineId, sito);
+  await inviaBigliettiUnaVolta(ordineId, sito).catch((err) => {
+    if (rilanciaEmail) throw err;
+    console.error('email biglietti', ordineId, err);
+  });
   return ordineId;
 }
 
-/** The Checkout expired unpaid: release the seats now instead of waiting for scade_at. */
-export async function scadiOrdine(session: Stripe.Checkout.Session) {
-  const id = session.metadata?.ordine_id;
-  if (!id) return;
-  const { error } = await supabaseServizio().from('ordini').update({ stato: 'scaduto' }).eq('id', id).eq('stato', 'in_attesa');
+/** The checkout expired unpaid: release the seats now instead of waiting for scade_at. */
+export async function scadiOrdine(ordineId: string) {
+  const { error } = await supabaseServizio().from('ordini').update({ stato: 'scaduto' }).eq('id', ordineId).eq('stato', 'in_attesa');
   if (error) throw error;
 }
 
-/** The buyer came back from Stripe without paying: close that Checkout and free the seats now. */
+/** The buyer went back from the payment page: close that checkout and free the seats now. */
 export async function annullaCheckout(ordineId: string) {
   if (!/^[0-9a-f-]{36}$/.test(ordineId)) return;
   const sb = supabaseServizio();
-  const { data } = await sb.from('ordini').update({ stato: 'scaduto' }).eq('id', ordineId).eq('stato', 'in_attesa').select('stripe_session_id');
-  const sid = data?.[0]?.stripe_session_id;
-  if (sid) await getStripe().checkout.sessions.expire(sid).catch(() => {});
+  const { data } = await sb.from('ordini').update({ stato: 'scaduto' }).eq('id', ordineId).eq('stato', 'in_attesa').select('checkout_id');
+  const id = data?.[0]?.checkout_id;
+  if (id) await disattivaCheckout(id);
 }
 
 export type OrdineCompleto = {

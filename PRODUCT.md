@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Delegated: **Astro** with a server adapter (hybrid output). Marketing pages (home, event albums) are static for speed and SEO. Membership signup, payment webhooks and the status check run as server endpoints. Why: the content is mostly static and image-heavy, so it should ship close to zero JS, while the membership portal needs a small, secure server side. Deploy: **Vercel**. Data: **Supabase** (Postgres + Storage + Auth for admins). Payments: **Stripe Checkout**. Email: **Resend**. Album photos are uploaded from `/admin`, not kept in the repository. See SETUP.md.
+Delegated: **Astro** with a server adapter (hybrid output). Marketing pages (home, event albums) are static for speed and SEO. Membership signup, payment webhooks and the status check run as server endpoints. Why: the content is mostly static and image-heavy, so it should ship close to zero JS, while the membership portal needs a small, secure server side. Deploy: **Vercel**. Data: **Supabase** (Postgres + Storage + Auth for admins). Payments: **SumUp** (online payments, card widget on our own page). Email: **Resend**. Album photos are uploaded from `/admin`, not kept in the repository. See SETUP.md.
 
 ## Users
 
@@ -51,7 +51,7 @@ PNL is a group of creative people who like to have fun and make others have fun.
 - Signup collects the data an Italian *associazione culturale* needs for its member register (*libro soci*). The exact fields are to be confirmed with the association's statute.
 
 **Payments.** No provider exists yet. Proposed setup, not yet confirmed:
-- Stripe (Payment Element / Checkout) for cards, **Apple Pay** and **Google Pay**.
+- **SumUp** online payments (2.5% fee): cards, plus Apple Pay and Google Pay once SumUp enables them. Chosen over Stripe for lower fees on small amounts; the association already uses SumUp at events.
 - **PayPal** as a separate option.
 - **Bank transfer (*bonifico*)**. The signup is recorded as "pending" and a volunteer confirms it by hand once the transfer arrives.
 

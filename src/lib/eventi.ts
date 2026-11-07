@@ -17,6 +17,8 @@ export type Evento = {
   accesso: 'pubblico' | 'soci';
   ingresso: 'libero' | 'pagamento';
   prezzoCent: number | null;
+  /** optional booking fee per ticket (diritto di prevendita), 0 if none */
+  prevenditaCent: number;
   prenotazione: boolean;
   posti: number | null;
   maxPerOrdine: number;
@@ -28,7 +30,7 @@ export type Evento = {
 
 const COLONNE =
   'id, slug, titolo, descrizione, locandina_path, locandina_width, locandina_height, inizio, fine, ' +
-  'luogo_nome, luogo_indirizzo, accesso, ingresso, prezzo_cent, prenotazione, posti, max_per_ordine, ' +
+  'luogo_nome, luogo_indirizzo, accesso, ingresso, prezzo_cent, prevendita_cent, prenotazione, posti, max_per_ordine, ' +
   'vendite_fino_a, stato, album:album(slug, pubblicato)';
 
 type Riga = Record<string, any>;
@@ -57,6 +59,7 @@ async function toEvento(r: Riga): Promise<Evento> {
     accesso: r.accesso,
     ingresso: r.ingresso,
     prezzoCent: r.prezzo_cent,
+    prevenditaCent: r.ingresso === 'pagamento' ? r.prevendita_cent ?? 0 : 0,
     prenotazione: r.prenotazione,
     posti: r.posti,
     maxPerOrdine: r.max_per_ordine,

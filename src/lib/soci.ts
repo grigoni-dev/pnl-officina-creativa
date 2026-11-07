@@ -1,8 +1,7 @@
-import type Stripe from 'stripe';
 import { quota } from '../data/site';
 import { emailValida, normEmail, normTel, socioDaContatto, telefonoValido } from './contatti';
 import { emailTessera, inviaEmail } from './email';
-import { getStripe, paymentIntentId, scadenzaCheckout } from './stripe';
+import { creaCheckout } from './sumup';
 import { supabaseServizio } from './supabase';
 
 /* ---------------------------------------------------------------------------
@@ -95,33 +94,13 @@ export async function salvaSocioInAttesa(dati: DatiSocio): Promise<string> {
   return data.id;
 }
 
-/** Signup only (no ticket): saves the member and returns the Stripe Checkout URL. */
+/** Signup only (no ticket): saves the member, opens a SumUp checkout and returns the payment page. */
 export async function avviaIscrizione(dati: DatiSocio, sito: string): Promise<string> {
   const id = await salvaSocioInAttesa(dati);
-  const session = await getStripe().checkout.sessions.create({
-    mode: 'payment',
-    locale: 'it',
-    customer_email: dati.email,
-    client_reference_id: id,
-    metadata: { tipo: 'tessera', socio_id: id },
-    payment_intent_data: { description: `Quota associativa · ${dati.nome} ${dati.cognome}`, metadata: { tipo: 'tessera', socio_id: id } },
-    line_items: [rigaQuota()],
-    expires_at: scadenzaCheckout(),
-    success_url: `${sito}/tesseramento/grazie?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${sito}/tesseramento?annullato=1`,
-  });
-  await supabaseServizio().from('soci').update({ stripe_session_id: session.id }).eq('id', id);
-  return session.url!;
+  const c = await creaCheckout({ tipo: 't', id, importoCent: quota.importo * 100, descrizione: `Quota associativa PNL Officina Creativa · ${dati.nome} ${dati.cognome}`, sito });
+  await supabaseServizio().from('soci').update({ checkout_id: c.id }).eq('id', id);
+  return `/pagamento/${c.id}`;
 }
-
-export const rigaQuota = (): Stripe.Checkout.SessionCreateParams.LineItem => ({
-  quantity: 1,
-  price_data: {
-    currency: 'eur',
-    unit_amount: quota.importo * 100,
-    product_data: { name: 'Quota associativa PNL Officina Creativa', description: 'Una volta sola, valida fino al recesso' },
-  },
-});
 
 /* ---------------------------------------------------------------------------
  * Activation + welcome email. Called from the webhook and the thank-you
@@ -130,9 +109,13 @@ export const rigaQuota = (): Stripe.Checkout.SessionCreateParams.LineItem => ({
 
 export type Tessera = { id: string; numero: number; nome: string; cognome: string; email: string; pagato_at: string };
 
-export async function attivaSocio(socioId: string, session: Stripe.Checkout.Session, sito: string): Promise<Tessera | null> {
+/**
+ * `rilanciaEmail`: the webhook wants a failed email to throw (SumUp retries later);
+ * the thank-you page doesn't (the member has paid and must see the card anyway).
+ */
+export async function attivaSocio(socioId: string, checkoutId: string, transazioneId: string | null, sito: string, rilanciaEmail = true): Promise<Tessera | null> {
   const sb = supabaseServizio();
-  const { error } = await sb.rpc('attiva_socio', { p_socio: socioId, p_session: session.id, p_payment_intent: paymentIntentId(session) });
+  const { error } = await sb.rpc('attiva_socio', { p_socio: socioId, p_checkout: checkoutId, p_transazione: transazioneId });
   if (error) throw error;
 
   const { data: socio, error: e2 } = await sb
@@ -157,7 +140,8 @@ export async function attivaSocio(socioId: string, session: Stripe.Checkout.Sess
         await inviaEmail({ to: socio.email, ...m });
       } catch (err) {
         await sb.from('soci').update({ email_inviata_at: null }).eq('id', socio.id);
-        throw err; // the webhook answers 500 and Stripe retries
+        if (rilanciaEmail) throw err; // the webhook answers 500 and SumUp retries
+        console.error('email tessera', socio.id, err);
       }
     }
   }

@@ -55,7 +55,7 @@ const nErrori = Object.keys(errori).filter((k) => k !== 'generale').length;
 
 const gruppi = gruppiSocio();
 ---
-<Base title={`Diventa socio · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi con carta, Apple Pay o Google Pay e la tessera arriva per email.`}>
+<Base title={`Diventa socio · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi online con la carta e la tessera arriva per email.`}>
   <Nav />
   <main id="contenuto" class="modulo">
     <div class="wrap modulo__grid">
@@ -105,7 +105,7 @@ const gruppi = gruppiSocio();
           <p class="display paga__importo" aria-hidden="true">{quota.importo}&nbsp;€</p>
           <div class="paga__testo">
             <button class="btn paga__btn" type="submit">Vai al pagamento</button>
-            <p class="paga__note">Paghi su Stripe, in modo sicuro: carta, Apple Pay o Google Pay. Noi non vediamo i dati della carta.</p>
+            <p class="paga__note">Nella pagina dopo paghi con SumUp, in modo sicuro, con la carta. Noi non vediamo mai i dati della carta.</p>
           </div>
         </div>
       </form>
@@ -117,7 +117,7 @@ const gruppi = gruppiSocio();
 <script>
   // After a failed submit, move focus to the summary so screen readers announce it.
   document.getElementById('riepilogo-errori')?.focus();
-  // Avoid double submits while the redirect to Stripe is on its way.
+  // Avoid double submits while the redirect to the payment page is on its way.
   const form = document.querySelector<HTMLFormElement>('.modulo__form');
   form?.addEventListener('submit', () => {
     const b = form.querySelector<HTMLButtonElement>('.paga__btn');

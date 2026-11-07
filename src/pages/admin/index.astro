@@ -63,6 +63,7 @@ import Base from '../../layouts/Base.astro';
             <select id="e-ingresso" name="ingresso"><option value="pagamento">A pagamento</option><option value="libero">Libero</option></select>
           </div>
           <div class="field" data-se="pagamento"><label for="e-prezzo">Prezzo (€)</label><input id="e-prezzo" name="prezzo" type="number" min="0.5" step="0.5" inputmode="decimal" /></div>
+          <div class="field" data-se="pagamento"><label for="e-prev">Diritto di prevendita (€, facoltativo)</label><input id="e-prev" name="prevendita" type="number" min="0" step="0.1" inputmode="decimal" /><p class="field__hint">Per biglietto, solo online. Vuoto = nessuno</p></div>
           <label class="check" data-se="libero"><input type="checkbox" name="prenotazione" /> <span>Serve la prenotazione (gratuita, con QR)</span></label>
           <div class="field"><label for="e-posti">Posti (vuoto = senza limite)</label><input id="e-posti" name="posti" type="number" min="1" step="1" /></div>
           <div class="field"><label for="e-max">Massimo biglietti per ordine</label><input id="e-max" name="max_per_ordine" type="number" min="1" max="20" value="6" required /></div>
@@ -289,6 +290,7 @@ import Base from '../../layouts/Base.astro';
     val(formEvento, 'ora_inizio').value = data.ora_inizio.slice(0, 5);
     val(formEvento, 'ora_fine').value = data.ora_fine.slice(0, 5);
     val(formEvento, 'prezzo').value = data.prezzo_cent ? String(data.prezzo_cent / 100) : '';
+    val(formEvento, 'prevendita').value = data.prevendita_cent ? String(data.prevendita_cent / 100) : '';
     val(formEvento, 'prenotazione').checked = data.prenotazione;
     val(formEvento, 'vendite_fino_a').value = locale(data.vendite_fino_a);
     await caricaAlbumSelect(data.album_id);
@@ -313,6 +315,7 @@ import Base from '../../layouts/Base.astro';
       luogo_nome: s('luogo_nome'), luogo_indirizzo: s('luogo_indirizzo') || null, descrizione: s('descrizione') || null,
       accesso: s('accesso'), ingresso,
       prezzo_cent: ingresso === 'pagamento' ? Math.round(Number(s('prezzo').replace(',', '.')) * 100) || null : null,
+      prevendita_cent: ingresso === 'pagamento' ? Math.round(Number(s('prevendita').replace(',', '.')) * 100) || 0 : 0,
       prenotazione: ingresso === 'libero' && f.get('prenotazione') === 'on',
       posti: s('posti') ? Number(s('posti')) : null,
       max_per_ordine: Number(s('max_per_ordine')) || 6,
@@ -368,7 +371,7 @@ import Base from '../../layouts/Base.astro';
     if (!evento) return;
     const { data, error } = await sb
       .from('ordini')
-      .select('id, nome, cognome, email, telefono, n_biglietti, importo_cent, quota_cent, stato, created_at, biglietti(id, nome, cognome, stato, usato_at)')
+      .select('id, nome, cognome, email, telefono, n_biglietti, importo_cent, prevendita_cent, quota_cent, stato, created_at, biglietti(id, nome, cognome, stato, usato_at)')
       .eq('evento_id', evento.id)
       .in('stato', ['confermato', 'rimborsato', 'annullato'])
       .order('created_at', { ascending: false });
@@ -378,11 +381,11 @@ import Base from '../../layouts/Base.astro';
     const conf = ordini.filter((o) => o.stato === 'confermato');
     const tutti = conf.flatMap((o) => o.biglietti).filter((b: any) => b.stato === 'valido' || b.stato === 'usato');
     const entrati = tutti.filter((b: any) => b.stato === 'usato').length;
-    const incasso = conf.reduce((s, o) => s + o.importo_cent, 0);
+    const incasso = conf.reduce((s, o) => s + o.importo_cent + (o.prevendita_cent ?? 0), 0);
     $('.adm-numeri').innerHTML = `
       <div><dt class="label">Biglietti</dt><dd class="display">${tutti.length}${evento.posti ? ` <small>/ ${evento.posti}</small>` : ''}</dd></div>
       <div><dt class="label">Entrati</dt><dd class="display">${entrati}</dd></div>
-      <div><dt class="label">Incasso biglietti</dt><dd class="display">${euro(incasso)}</dd></div>
+      <div><dt class="label">Incasso biglietti e prevendite</dt><dd class="display">${euro(incasso)}</dd></div>
       <div><dt class="label">Ordini</dt><dd class="display">${conf.length}</dd></div>`;
     $<HTMLButtonElement>('.adm-annulla-evento').hidden = evento.stato === 'annullato';
     disegnaOrdini();
@@ -397,7 +400,7 @@ import Base from '../../layouts/Base.astro';
           <strong>${esc(o.nome)} ${esc(o.cognome)}</strong>
           <span class="label">${esc(o.email)} · ${esc(o.telefono)} · ${giorno(o.created_at)}</span>
           <span class="adm-badge ${o.stato === 'confermato' ? 'is-on' : 'is-ko'}">${STATO_ORDINE[o.stato]}</span>
-          <span class="label">${o.importo_cent ? euro(o.importo_cent) : 'gratis'}${o.quota_cent ? ' + tessera' : ''}</span>
+          <span class="label">${o.importo_cent ? euro(o.importo_cent + (o.prevendita_cent ?? 0)) : 'gratis'}${o.quota_cent ? ' + tessera' : ''}</span>
           ${o.stato === 'confermato' ? `<button type="button" class="link" data-rimborsa="${o.id}">${o.importo_cent ? 'Rimborsa' : 'Annulla'}</button>` : ''}
         </div>
         <ul class="adm-ordine__b">${o.biglietti.map((b: any) => `
@@ -414,11 +417,12 @@ import Base from '../../layouts/Base.astro';
     const t = e.target as HTMLElement;
     if (t.dataset.rimborsa) {
       const o = ordini.find((x) => x.id === t.dataset.rimborsa);
-      const quanto = o.importo_cent ? `rimborsare ${euro(o.importo_cent)} a` : 'annullare la prenotazione di';
+      const tot = o.importo_cent + (o.prevendita_cent ?? 0);
+      const quanto = tot ? `rimborsare ${euro(tot)} a` : 'annullare la prenotazione di';
       if (!confirm(`Vuoi ${quanto} ${o.nome} ${o.cognome}? I suoi ${o.n_biglietti} biglietti smettono di valere.${o.quota_cent ? ' La tessera resta valida.' : ''}`)) return;
       try {
         const r = await api('/api/admin/rimborso', { ordine_id: o.id });
-        msg(r.esito === 'rimborsato' ? 'Rimborso fatto. Stripe accredita entro 5–10 giorni.' : 'Prenotazione annullata.');
+        msg(r.esito === 'rimborsato' ? 'Rimborso fatto su SumUp: l’accredito arriva in qualche giorno.' : 'Prenotazione annullata.');
       } catch (err) {
         return msg(`Rimborso non riuscito: ${(err as Error).message}`, true);
       }

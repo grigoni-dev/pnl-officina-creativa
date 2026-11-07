@@ -17,7 +17,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 - Alla lista manca la data di nascita: chi viene importato è segnato **"manca la data di nascita"**, così si sa a chi chiederla.
 - Se una riga ha la stessa email o lo stesso telefono di un socio già presente, viene saltata e segnalata.
 
-**Iscrizione online.** Si chiedono solo **nome, cognome, data di nascita, email e telefono** (online solo maggiorenni), si pagano 5 € su Stripe e arriva l'email con la tessera.
+**Iscrizione online.** Si chiedono solo **nome, cognome, data di nascita, email e telefono** (online solo maggiorenni), si pagano 5 € con SumUp e arriva l'email con la tessera.
 
 **Verifica tessera** (`/verifica`). Si inserisce email o telefono e il sito risponde solo *attiva* o *non trovata*. Non mostra mai nomi né altri dati. Il limite è di 20 richieste ogni 10 minuti per connessione.
 - Da sapere: chi conosce l'email o il telefono di qualcuno può scoprire se quella persona è socia. Per un'associazione culturale è un rischio basso, ma va detto anche nell'informativa.
@@ -35,6 +35,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 - **descrizione**;
 - **accesso**: *pubblico* oppure *riservato ai soci*;
 - **ingresso**: *libero* oppure *a pagamento*, con il **prezzo**. Per l'ingresso libero si sceglie anche se serve la **prenotazione** o se è solo informativo;
+- **diritto di prevendita** (facoltativo, solo eventi a pagamento): importo fisso per biglietto, uguale per qualunque carta;
 - **posti disponibili** (facoltativo). Quando finiscono, il bottone diventa "Esaurito";
 - **massimo di biglietti per ordine** (proposta: 6);
 - **vendita aperta fino a** (di default l'inizio dell'evento);
@@ -59,7 +60,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 3. **Se l'evento è riservato ai soci**, per ogni biglietto serve anche l'email o il telefono di quella persona, e il sito controlla che sia socia attiva.
    - **Se chi compra non è socio**, basta una spunta, "Mi iscrivo adesso": diventa socio con i dati che ha già scritto (nome, cognome, email, telefono) e paga **tessera + biglietto insieme**, con un solo pagamento. La data di nascita gli verrà chiesta dopo: nel pannello risulta "manca la data di nascita".
    - Gli amici per cui compra devono già essere soci. Se uno non lo è, il sito lo dice e quel biglietto non si può comprare.
-4. Pagamento su Stripe, come per la tessera (carta, Apple Pay, Google Pay, PayPal se attivato). Per le prenotazioni gratuite non c'è nessun pagamento: si conferma e basta.
+4. Pagamento con SumUp, come per la tessera: il modulo carta compare in una pagina del sito (Apple Pay e Google Pay quando SumUp li attiva). Se l'evento ha un **diritto di prevendita**, si aggiunge a ogni biglietto ed è mostrato prima di pagare. Per le prenotazioni gratuite non c'è nessun pagamento: si conferma e basta.
 5. Arriva un'email con **un QR per ogni biglietto**. Ogni QR è anche una pagina `/biglietto/<codice>` che si può mostrare dal telefono.
 
 **Posti contati senza vendere più del dovuto.** Quando qualcuno va a pagare, i suoi posti restano bloccati per 30 minuti. Se non paga, si liberano da soli.
@@ -71,7 +72,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 
 C'è anche la ricerca per nome, se il QR non si legge. I volontari dell'ingresso hanno un account di tipo **"ingresso"**: vedono solo lo scanner, non i dati dei soci.
 
-**Annullamenti e rimborsi.** Dal pannello si annulla un biglietto (il QR smette di valere). Il rimborso si fa con un clic dal pannello, che lo esegue su Stripe. Se si annulla un evento, il pannello permette di rimborsare tutti i biglietti in un colpo.
+**Annullamenti e rimborsi.** Dal pannello si annulla un biglietto (il QR smette di valere). Il rimborso si fa con un clic dal pannello, che lo esegue su SumUp (biglietti e prevendita; la quota della tessera resta). Se si annulla un evento, il pannello permette di rimborsare tutti i biglietti in un colpo.
 
 ## 4. Pannello admin
 
@@ -83,7 +84,7 @@ Ci sono due tipi di account:
 
 Non blocca lo sviluppo, ma va chiarito prima di vendere:
 - **Biglietti a pagamento a chi non è socio:** per un'associazione culturale vendere biglietti a chi non è socio è in genere **attività commerciale** (IVA, certificazione dei corrispettivi, eventuale SIAE per la musica). Per gli eventi riservati ai soci la quota d'ingresso può rientrare nelle attività istituzionali.
-- **Commissioni di Stripe:** circa 1,5% + 0,25 € per pagamento con carte europee, a carico dell'associazione.
+- **Commissioni di SumUp:** 2,5% per pagamento online, a carico dell'associazione (o coperte in parte dal diritto di prevendita).
 
 ## 6. Decisioni
 

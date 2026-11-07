@@ -9,23 +9,25 @@ import { leggiOrdineCompleto, type OrdineCompleto } from '../../lib/ordini';
 import { completaPagamento } from '../../lib/pagamenti';
 import { qrSvg } from '../../lib/qr';
 import { indirizzoSito } from '../../lib/sito';
-import { getStripe } from '../../lib/stripe';
+import { idCheckoutValido, leggiCheckout } from '../../lib/sumup';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
 
-// Back from Stripe (?session_id) or from a free booking (?ordine). The webhook
-// usually confirmed the order already; if not, this does it (idempotent).
+// From the payment page (?checkout) or from a free booking (?ordine). The webhook
+// usually confirmed the order already; if not, this does it, after reading the
+// checkout back from SumUp (idempotent).
 const sito = indirizzoSito(Astro.url);
-const sid = Astro.url.searchParams.get('session_id') ?? '';
+const sid = Astro.url.searchParams.get('checkout') ?? '';
 const oid = Astro.url.searchParams.get('ordine') ?? '';
 let ordine: OrdineCompleto | null = null;
 let stato: 'ok' | 'attesa' | 'errore' = 'errore';
 try {
   let id: string | null = null;
-  if (/^cs_[A-Za-z0-9_]+$/.test(sid)) {
-    const session = await getStripe().checkout.sessions.retrieve(sid);
-    id = (await completaPagamento(session, sito))?.ordineId ?? null;
+  if (idCheckoutValido(sid)) {
+    const c = await leggiCheckout(sid);
+    if (c.status === 'FAILED' || c.status === 'EXPIRED') return Astro.redirect(`/pagamento/${c.id}`, 303);
+    id = (await completaPagamento(c, sito, true))?.ordineId ?? null;
     if (!id) stato = 'attesa';
   } else if (/^[0-9a-f-]{36}$/.test(oid)) id = oid;
   if (id) {
@@ -62,7 +64,7 @@ const ev = ordine?.evento;
       {stato === 'attesa' && (
         <>
           <Reg as="h1" class="display h2" text="Pagamento in arrivo." />
-          <p class="lede">Stripe sta ancora confermando il pagamento. Appena arriva ti mandiamo i biglietti per email: non serve rifare nulla.</p>
+          <p class="lede">SumUp sta ancora confermando il pagamento. Appena arriva ti mandiamo i biglietti per email: non serve rifare nulla.</p>
         </>
       )}
       {stato === 'errore' && (

@@ -1,0 +1,119 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Reg from '../../components/Reg.astro';
+import { contatti } from '../../data/site';
+import { euro } from '../../lib/eventi';
+import { idCheckoutValido, leggiCheckout, leggiRiferimento, type Checkout } from '../../lib/sumup';
+import { supabaseServizio } from '../../lib/supabase';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+// The payment step: SumUp's card widget, mounted on the checkout created by
+// /tesseramento or by the ticket form. Card details go straight to SumUp.
+const id = Astro.params.checkout ?? '';
+if (!idCheckoutValido(id)) return new Response(null, { status: 404 });
+
+let c: Checkout | null = null;
+try {
+  c = await leggiCheckout(id);
+} catch (err) {
+  console.error('pagamento', id, err);
+}
+const rif = c ? leggiRiferimento(c.checkout_reference) : null;
+if (!c || !rif) return new Response(null, { status: 404 });
+
+const grazie = rif.tipo === 'o' ? `/biglietti/grazie?checkout=${c.id}` : `/tesseramento/grazie?checkout=${c.id}`;
+if (c.status === 'PAID') return Astro.redirect(grazie, 303);
+
+// where "go back" leads: the ticket form (which frees the seats) or the signup form
+let indietro = '/tesseramento?annullato=1';
+if (rif.tipo === 'o') {
+  const { data } = await supabaseServizio().from('ordini').select('evento:eventi(slug)').eq('id', rif.id).maybeSingle();
+  const slug = (data?.evento as { slug?: string } | null)?.slug;
+  indietro = slug ? `/eventi/${slug}/biglietti?annullato=${rif.id}` : '/eventi';
+}
+const cent = Math.round(c.amount * 100);
+const scaduto = c.status === 'EXPIRED';
+---
+<Base title="Pagamento · PNL Officina Creativa" description="Pagamento sicuro con SumUp." noindex>
+  <Nav />
+  <main id="contenuto" class="pg">
+    <div class="wrap pg__grid">
+      <header class="pg__head">
+        <a class="link" href={indietro}>← Torna indietro</a>
+        <Reg as="h1" class="display h2" text={scaduto ? 'Tempo scaduto' : 'Pagamento'} />
+        <p class="lede">{c.description}</p>
+        <p class="display pg__importo">{euro(cent)}</p>
+        <p class="body pg__note">Il pagamento passa da SumUp, in modo sicuro: noi non vediamo mai i dati della carta. Hai 30 minuti per completarlo.</p>
+      </header>
+
+      <div class="pg__box" data-hides-actionbar>
+        {scaduto ? (
+          <div class="pg__msg">
+            <p class="lede">Sono passati più di 30 minuti e il pagamento non è più valido. Non ti è stato addebitato nulla.</p>
+            <a class="btn" href={indietro}>Ricomincia</a>
+          </div>
+        ) : (
+          <>
+            <div id="sumup-card" data-checkout={c.id} data-importo={(cent / 100).toFixed(2)} data-grazie={grazie}></div>
+            <p class="pg__msg pg__errore" role="alert" hidden></p>
+            <p class="pg__carica label" aria-live="polite">Carico il modulo di pagamento…</p>
+            <noscript><p class="pg__msg">Per pagare serve JavaScript attivo. In alternativa scrivici a {contatti.email}.</p></noscript>
+          </>
+        )}
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<script is:inline src="https://gateway.sumup.com/gateway/ecom/card/v2/sdk.js" defer></script>
+<script>
+  // Mount SumUp's widget. "success" from the widget isn't proof: the thank-you
+  // page reads the checkout back from SumUp before confirming anything.
+  const box = document.getElementById('sumup-card');
+  const errore = document.querySelector<HTMLElement>('.pg__errore');
+  const carica = document.querySelector<HTMLElement>('.pg__carica');
+  const mostraErrore = (t: string) => { if (errore) { errore.textContent = t; errore.hidden = false; } };
+
+  const monta = () => {
+    const w = window as any;
+    const sdk = w.SumUpCard ?? w.SumUpPayment;
+    if (!box) return;
+    if (!sdk) return mostraErrore('Non riesco a caricare il modulo di pagamento. Disattiva eventuali blocchi pubblicità per questa pagina e ricarica.');
+    sdk.mount({
+      id: 'sumup-card',
+      checkoutId: box.dataset.checkout,
+      locale: 'it-IT',
+      country: 'IT',
+      currency: 'EUR',
+      amount: box.dataset.importo,
+      onLoad: () => carica?.remove(),
+      onResponse: (tipo: string) => {
+        if (tipo === 'success') location.href = box.dataset.grazie!;
+        else if (tipo === 'error') mostraErrore('Il pagamento non è andato a buon fine. Controlla i dati della carta e riprova.');
+        else if (tipo === 'fail') mostraErrore('Pagamento annullato o non completato. Puoi riprovare.');
+      },
+    });
+  };
+  if (document.readyState === 'complete') monta();
+  else addEventListener('load', monta);
+</script>
+
+<style>
+  .pg { padding-block: clamp(32px, 5vw, 72px) clamp(72px, 10vw, 144px); }
+  .pg__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px clamp(16px, 2vw, 32px); align-items: start; }
+  .pg__head { grid-column: 1 / 6; display: grid; gap: 20px; justify-items: start; }
+  .pg__importo { background: var(--pink); color: var(--overprint); font-size: clamp(3.5rem, 6vw, 5.5rem); line-height: 0.8; padding: 0.1em 0.14em 0.02em; }
+  .pg__note { font-size: var(--step--1); font-weight: 600; max-width: 40ch; }
+  .pg__box { grid-column: 7 / 13; border: var(--rule) solid var(--blue); background: #fff; padding: clamp(16px, 2.5vw, 28px); min-height: 280px; display: grid; gap: 16px; align-content: start; }
+  .pg__msg { display: grid; gap: 20px; justify-items: start; font-weight: 600; }
+  .pg__errore { color: var(--overprint); border-left: var(--rule) solid var(--pink); padding-left: 12px; }
+  .pg__errore[hidden] { display: none; }
+  @media (max-width: 900px) {
+    .pg__head, .pg__box { grid-column: 1 / -1; }
+  }
+</style>

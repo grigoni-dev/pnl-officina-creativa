@@ -1,7 +1,7 @@
 ---
 import Reg from './Reg.astro';
 import {
-  type Evento, anno, etichettaAccesso, etichettaBottone, etichettaIngresso, giornoEvento, mappa, orario, statoVendita,
+  type Evento, anno, euro, etichettaAccesso, etichettaBottone, etichettaIngresso, giornoEvento, mappa, orario, statoVendita,
 } from '../lib/eventi';
 
 /**
@@ -44,6 +44,7 @@ const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti 
 
     <dl class="ev__fatti">
       <div><dt class="label">Quando</dt><dd>{giornoEvento(e.inizio)}, <span class="ev__orario">{orario(e)}</span></dd></div>
+      {e.prevenditaCent > 0 && <div><dt class="label">Prevendita</dt><dd>+ {euro(e.prevenditaCent)} a biglietto, solo online</dd></div>}
       <div><dt class="label">Dove</dt><dd>{e.luogoNome}{e.luogoIndirizzo && <><br /><span class="ev__indirizzo">{e.luogoIndirizzo}</span></>} <a class="link ev__mappa" href={mappa(e)} target="_blank" rel="noopener">Mappa ↗</a></dd></div>
     </dl>
 

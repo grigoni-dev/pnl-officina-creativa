@@ -15,8 +15,11 @@ export default defineConfig({
       PUBLIC_SUPABASE_ANON_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
       // Server only.
       SUPABASE_SERVICE_ROLE_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
-      STRIPE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
-      STRIPE_WEBHOOK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // SumUp online payments: API key (sup_sk_…) and merchant code, from me.sumup.com.
+      SUMUP_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      SUMUP_MERCHANT_CODE: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Only for tests against a local fake; defaults to https://api.sumup.com.
+      SUMUP_API_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       EMAIL_FROM: envField.string({ context: 'server', access: 'secret', default: 'PNL Officina Creativa <onboarding@resend.dev>' }),
       EMAIL_REPLY_TO: envField.string({ context: 'server', access: 'secret', optional: true }),

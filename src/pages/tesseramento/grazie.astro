@@ -6,21 +6,22 @@ import Reg from '../../components/Reg.astro';
 import { contatti } from '../../data/site';
 import { completaPagamento } from '../../lib/pagamenti';
 import type { Tessera } from '../../lib/soci';
-import { getStripe } from '../../lib/stripe';
+import { idCheckoutValido, leggiCheckout } from '../../lib/sumup';
 import { indirizzoSito } from '../../lib/sito';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
 
-// Stripe sends the member back here. The webhook usually got there first; if
-// not, this activates the member itself (same idempotent path).
-const id = Astro.url.searchParams.get('session_id') ?? '';
+// The payment page sends the member here. The webhook usually got there first;
+// if not, this activates the member itself, after reading the checkout back from SumUp.
+const id = Astro.url.searchParams.get('checkout') ?? '';
 let tessera: Tessera | null = null;
 let stato: 'ok' | 'attesa' | 'errore' = 'errore';
-if (/^cs_[A-Za-z0-9_]+$/.test(id)) {
+if (idCheckoutValido(id)) {
   try {
-    const session = await getStripe().checkout.sessions.retrieve(id);
-    tessera = (await completaPagamento(session, indirizzoSito(Astro.url)))?.tessera ?? null;
+    const c = await leggiCheckout(id);
+    if (c.status === 'FAILED' || c.status === 'EXPIRED') return Astro.redirect(`/pagamento/${c.id}`, 303);
+    tessera = (await completaPagamento(c, indirizzoSito(Astro.url), true))?.tessera ?? null;
     stato = tessera ? 'ok' : 'attesa';
   } catch (err) {
     console.error('grazie', err);
@@ -50,7 +51,7 @@ const n = tessera ? String(tessera.numero).padStart(4, '0') : '';
       {stato === 'attesa' && (
         <>
           <Reg as="h1" class="display h2" text="Pagamento in arrivo." />
-          <p class="lede">Stripe sta ancora confermando il pagamento. Appena arriva ti mandiamo la tessera per email: non serve rifare nulla.</p>
+          <p class="lede">SumUp sta ancora confermando il pagamento. Appena arriva ti mandiamo la tessera per email: non serve rifare nulla.</p>
           <a class="btn" href="/">Torna alla home</a>
         </>
       )}

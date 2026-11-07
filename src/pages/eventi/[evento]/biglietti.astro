@@ -21,6 +21,8 @@ const vendita = statoVendita(e);
 const max = Math.max(1, Math.min(e.maxPerOrdine, e.postiRimasti ?? e.maxPerOrdine));
 const soci = e.accesso === 'soci';
 const prezzo = e.ingresso === 'pagamento' ? e.prezzoCent! : 0;
+const prevendita = e.prevenditaCent;
+const aPersona = prezzo + prevendita;
 
 let m: ModuloOrdine = {
   acquirente: { nome: '', cognome: '', email: '', telefono: '' },
@@ -59,7 +61,7 @@ if (annullato && Astro.request.method === 'GET') await annullaCheckout(annullato
 
 const righe = Array.from({ length: max }, (_, i) => m.biglietti[i] ?? { nome: '', cognome: '', contatto: '' });
 const nErrori = Object.keys(errori).filter((k) => k !== 'generale' && k !== 'non_socio').length;
-const totale = prezzo * m.quantita + (m.iscriviti ? quota.importo * 100 : 0);
+const totale = aPersona * m.quantita + (m.iscriviti ? quota.importo * 100 : 0);
 const azione = prezzo > 0 || m.iscriviti ? 'Vai al pagamento' : 'Conferma la prenotazione';
 const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
 ---
@@ -74,7 +76,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <div><dt class="label">Evento</dt><dd>{e.titolo}</dd></div>
           <div><dt class="label">Quando</dt><dd>{giornoEvento(e.inizio)}, {orario(e)}</dd></div>
           <div><dt class="label">Dove</dt><dd>{e.luogoNome}</dd></div>
-          <div><dt class="label">Ingresso</dt><dd>{prezzo ? `${euro(prezzo)} a persona` : 'Libero, con prenotazione'} · {etichettaAccesso(e)}</dd></div>
+          <div><dt class="label">Ingresso</dt><dd>{prezzo ? `${euro(prezzo)} a persona${prevendita ? ` + ${euro(prevendita)} di diritto di prevendita` : ''}` : 'Libero, con prenotazione'} · {etichettaAccesso(e)}</dd></div>
         </dl>
         {soci && <p class="body nota-soci">Ogni biglietto è per un socio: per ognuno serve l’email o il telefono con cui è iscritto.</p>}
       </header>
@@ -87,7 +89,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <a class="btn btn--paper" href="/eventi">Torna agli eventi</a>
         </div>
       ) : (
-      <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={prezzo} data-quota={quota.importo * 100}>
+      <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={aPersona} data-quota={quota.importo * 100}>
         {annullato && !Object.keys(errori).length && <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla e i posti sono di nuovo liberi. Puoi riprovare quando vuoi.</p>}
         {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
         {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}
@@ -154,7 +156,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <p class="display paga__importo" data-totale aria-live="polite">{totale ? euro(totale) : 'Gratis'}</p>
           <div class="paga__testo">
             <button class="btn paga__btn" type="submit" data-azione>{azione}</button>
-            <p class="paga__note">{prezzo > 0 || soci ? 'Paghi su Stripe, in modo sicuro: carta, Apple Pay o Google Pay. ' : ''}I biglietti arrivano per email, con un QR per ognuno da mostrare all’ingresso.</p>
+            <p class="paga__note">{prezzo > 0 || soci ? 'Nella pagina dopo paghi con SumUp, in modo sicuro, con la carta. ' : ''}I biglietti arrivano per email, con un QR per ognuno da mostrare all’ingresso.{prevendita > 0 && ` Il totale comprende ${euro(prevendita)} di diritto di prevendita a biglietto.`}</p>
           </div>
         </div>
       </form>
