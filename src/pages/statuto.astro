@@ -1,0 +1,64 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Reg from '../components/Reg.astro';
+import { articoli, datiStatuto } from '../data/statuto';
+---
+<Base title="Statuto · PNL Officina Creativa" description={`Lo statuto della ${datiStatuto.denominazione}.`}>
+  <Nav />
+  <main id="contenuto" class="st">
+    <div class="wrap st__grid">
+      <header class="st__head">
+        <Reg as="h1" class="display h1" text="Statuto" />
+        <p class="lede">{datiStatuto.denominazione}. Adottato il {datiStatuto.adottato}.</p>
+        <nav class="st__indice" aria-label="Articoli">
+          <ol>
+            {articoli.map((a) => <li><a href={`#art-${a.n}`}><span class="label">Art. {a.n}</span> {a.titolo}</a></li>)}
+          </ol>
+        </nav>
+      </header>
+
+      <div class="st__testo">
+        {articoli.map((a) => (
+          <section class="st__art" id={`art-${a.n}`} aria-labelledby={`art-${a.n}-t`}>
+            <h2 id={`art-${a.n}-t`}><span class="label st__n">Art. {a.n}</span><span class="display st__titolo">{a.titolo}</span></h2>
+            {a.testo.map((b) => (Array.isArray(b)
+              ? <ul class="st__elenco">{b.map((v) => <li>{v}</li>)}</ul>
+              : <p>{b}</p>))}
+          </section>
+        ))}
+
+        <p class="st__nota">
+          Trascrizione degli articoli dello statuto: fa fede il documento originale registrato.
+          <a class="st__scarica" href="/statuto.pdf" download="statuto-pnl-officina-creativa.pdf">Scarica l’originale (PDF)</a>
+        </p>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .st { padding-block: clamp(36px, 5vw, 72px) clamp(72px, 10vw, 144px); }
+  .st__grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 40px clamp(16px, 2vw, 32px); align-items: start; }
+  .st__head { grid-column: 1 / 5; display: grid; gap: 24px; position: sticky; top: 110px; }
+  .st__indice ol { display: grid; border-top: var(--rule) solid var(--blue); }
+  .st__indice a { display: block; padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); text-decoration: none; font-weight: 600; font-size: var(--step--1); }
+  .st__indice a:hover { text-decoration: underline; }
+  .st__indice .label { display: inline-block; min-width: 4.2em; }
+  .st__testo { grid-column: 6 / 13; display: grid; gap: clamp(36px, 4vw, 52px); max-width: 68ch; }
+  .st__art { display: grid; gap: 14px; scroll-margin-top: 110px; border-top: var(--rule) solid var(--blue); padding-top: 16px; }
+  .st__art h2 { display: grid; gap: 6px; margin: 0 0 4px; }
+  .st__titolo { font-size: var(--step-2); line-height: 1; }
+  .st__art p, .st__elenco { text-wrap: pretty; }
+  .st__elenco { list-style: none; padding: 0; display: grid; gap: 6px; }
+  .st__elenco li { padding-left: 1.2em; position: relative; }
+  .st__elenco li::before { content: '–'; position: absolute; left: 0; color: var(--pink); font-weight: 800; }
+  .st__nota { font-size: var(--step--1); font-weight: 500; border-top: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); padding-top: 14px; display: grid; gap: 6px; justify-items: start; }
+  .st__scarica { font-weight: 700; text-underline-offset: 0.2em; }
+  @media (max-width: 960px) {
+    .st__head { grid-column: 1 / -1; position: static; }
+    .st__testo { grid-column: 1 / -1; }
+  }
+</style>

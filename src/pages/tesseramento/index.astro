@@ -4,7 +4,7 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import Reg from '../../components/Reg.astro';
 import Campo from '../../components/Campo.astro';
-import { contatti, quota } from '../../data/site';
+import { contatti, quota, statuto as urlStatuto } from '../../data/site';
 import { gruppiSocio } from '../../lib/campi-socio';
 import { CAMPI, GiaSocio, avviaIscrizione, leggiModulo, valida, type DatiSocio, type Errori } from '../../lib/soci';
 import { entroIlLimite, impronta } from '../../lib/limiti';
@@ -55,12 +55,12 @@ const nErrori = Object.keys(errori).filter((k) => k !== 'generale').length;
 
 const gruppi = gruppiSocio();
 ---
-<Base title={`Diventa socio · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi online con la carta e la tessera arriva per email.`}>
+<Base title={`Tessera associativa · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi online con la carta e la tessera arriva per email.`}>
   <Nav />
   <main id="contenuto" class="modulo">
     <div class="wrap modulo__grid">
       <header class="modulo__head">
-        <Reg as="h1" class="display h1" text="Diventa socio" />
+        <Reg as="h1" class="display h1" text="Tessera associativa" />
         <p class="lede">{quota.importo}&nbsp;€, una volta sola. Compili, paghi, e la tessera ti arriva per email. Vale finché non chiedi il recesso.</p>
         <ol class="modulo__passi label">
           <li class="is-qui">1 · I tuoi dati</li>
@@ -90,7 +90,7 @@ const gruppi = gruppiSocio();
           <div class="consensi">
             <label class:list={['check', errori.statuto && 'check--errore']}>
               <input type="checkbox" name="statuto" value="si" checked={statuto} required aria-invalid={errori.statuto ? 'true' : undefined} />
-              <span>Chiedo di diventare socio di PNL Officina Creativa e accetto lo statuto dell’associazione.</span>
+              <span>Chiedo di diventare socio di PNL Officina Creativa e accetto lo <a class="link" href={urlStatuto} target="_blank">statuto dell’associazione</a>.</span>
             </label>
             {errori.statuto && <p class="field__err">{errori.statuto}</p>}
             <label class:list={['check', errori.privacy && 'check--errore']}>

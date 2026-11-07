@@ -16,6 +16,9 @@ export const contatti = {
 
 export const quota = { importo: 5, valuta: '€' };
 
+/** La pagina con lo statuto (il PDF originale, se pubblicato, va in public/statuto.pdf). */
+export const statuto = '/statuto';
+
 /** Prossimo evento. CLIENT SLOT: null finché non c'è un evento annunciato. */
 export const prossimoEvento: null | {
   titolo: string;

@@ -4,7 +4,7 @@ import Nav from '../../../components/Nav.astro';
 import Footer from '../../../components/Footer.astro';
 import Reg from '../../../components/Reg.astro';
 import Campo from '../../../components/Campo.astro';
-import { contatti, quota } from '../../../data/site';
+import { contatti, quota, statuto } from '../../../data/site';
 import { etichettaAccesso, eventoDaSlug, euro, giornoEvento, orario, statoVendita } from '../../../lib/eventi';
 import { entroIlLimite, impronta } from '../../../lib/limiti';
 import { ErroreOrdine, annullaCheckout, creaOrdine, leggiOrdine, validaOrdine, type Errori, type ModuloOrdine } from '../../../lib/ordini';
@@ -149,7 +149,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
             {errori.non_socio && <p class="avviso avviso--errore" role="alert">{errori.non_socio}</p>}
             <label class:list={['check', 'iscrizione__spunta', errori.non_socio && 'check--errore']}>
               <input type="checkbox" name="iscriviti" value="si" checked={m.iscriviti} data-iscriviti />
-              <span><strong>Mi iscrivo adesso</strong> e accetto lo statuto: tessera da {quota.importo}&nbsp;€ insieme al biglietto, in un solo pagamento. Uso i dati che ho scritto sopra.</span>
+              <span><strong>Mi iscrivo adesso</strong> e accetto lo <a class="link" href={statuto} target="_blank">statuto</a>: tessera da {quota.importo}&nbsp;€ insieme al biglietto, in un solo pagamento. Uso i dati che ho scritto sopra.</span>
             </label>
           </fieldset>
         )}

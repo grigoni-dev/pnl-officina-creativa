@@ -1,5 +1,5 @@
 ---
-import { contatti, crediti } from '../data/site';
+import { contatti, crediti, statuto } from '../data/site';
 
 const social = [
   { nome: 'Instagram', url: contatti.instagram },
@@ -24,7 +24,8 @@ const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.licens
       <ul>
         <li><a class="link" href="/eventi">Prossimi eventi</a></li>
         <li><a class="link" href="/album">Album delle foto</a></li>
-        <li><a class="link" href="/tesseramento">Diventa socio</a></li>
+        <li><a class="link" href="/tesseramento">Tessera associativa</a></li>
+        <li><a class="link" href={statuto} target="_blank">Statuto</a></li>
         <li><a class="link" href="/verifica">Verifica la tessera</a></li>
         <li><a class="link" href="/privacy">Privacy</a></li>
         {social.map((s) => <li><a class="link" href={s.url!} rel="me">{s.nome}</a></li>)}
