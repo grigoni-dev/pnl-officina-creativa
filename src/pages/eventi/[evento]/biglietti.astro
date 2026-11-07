@@ -10,7 +10,8 @@ import { entroIlLimite, impronta } from '../../../lib/limiti';
 import { ErroreOrdine, annullaCheckout, creaOrdine, leggiOrdine, validaOrdine, type Errori, type ModuloOrdine } from '../../../lib/ordini';
 import { vuoto } from '../../../lib/soci';
 import { indirizzoSito } from '../../../lib/sito';
-import { NonConfigurato } from '../../../lib/supabase';
+import { NonConfigurato, supabaseServizio } from '../../../lib/supabase';
+import { verifica } from '../../../lib/firma';
 
 export const prerender = false;
 Astro.response.headers.set('Cache-Control', 'no-store');
@@ -56,6 +57,14 @@ if (Astro.request.method === 'POST' && vendita === 'aperta') {
   if (Object.keys(errori).length) Astro.response.status = 422;
 }
 
+// Personal link from a member email (?s=…): the buyer's details are filled in.
+const daEmail = Astro.request.method === 'GET' ? verifica('biglietti', Astro.url.searchParams.get('s') ?? '') : null;
+if (daEmail) {
+  const { data: s } = await supabaseServizio().from('soci').select('nome, cognome, email, telefono, stato').eq('id', daEmail).maybeSingle();
+  if (s?.stato === 'attivo') m.acquirente = { nome: s.nome, cognome: s.cognome, email: s.email ?? '', telefono: s.telefono ?? '' };
+}
+const precompilato = !!daEmail && !!m.acquirente.nome;
+
 const annullato = Astro.url.searchParams.get('annullato');
 if (annullato && Astro.request.method === 'GET') await annullaCheckout(annullato).catch((err) => console.error('annullaCheckout', err));
 
@@ -90,6 +99,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
         </div>
       ) : (
       <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={aPersona} data-quota={quota.importo * 100}>
+        {precompilato && <p class="avviso" role="status">Ciao {m.acquirente.nome}! I tuoi dati sono già qui: scegli quanti biglietti e vai al pagamento.</p>}
         {annullato && !Object.keys(errori).length && <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla e i posti sono di nuovo liberi. Puoi riprovare quando vuoi.</p>}
         {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
         {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}

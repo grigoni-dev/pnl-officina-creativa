@@ -9,6 +9,7 @@ import Base from '../../layouts/Base.astro';
         <a href="#eventi" data-tab="eventi">Eventi</a>
         <a href="#album" data-tab="album">Album</a>
         <a href="#soci" data-tab="soci">Soci</a>
+        <a href="#comunicazioni" data-tab="comunicazioni">Comunicazioni</a>
         <a href="/admin/ingresso">Ingresso ↗</a>
       </nav>
       <button class="adm-esci link" type="button" hidden>Esci</button>
@@ -147,16 +148,65 @@ import Base from '../../layouts/Base.astro';
       <ol class="adm-foto"></ol>
     </section>
 
+    <!-- ================= COMUNICAZIONI ================= -->
+    <section class="adm-view" data-view="comunicazioni" hidden>
+      <div class="adm-head"><h1 class="display h2">Comunicazioni</h1></div>
+      <p class="body adm-com-conteggio"></p>
+      <form class="adm-card adm-com">
+        <div class="adm-fields">
+          <div class="field field--wide">
+            <label for="c-evento">Evento da annunciare (facoltativo)</label>
+            <select id="c-evento" name="evento_id"><option value="">Nessuno: solo un messaggio</option></select>
+          </div>
+          <div class="field field--wide"><label for="c-oggetto">Oggetto</label><input id="c-oggetto" name="oggetto" required maxlength="150" placeholder="Es. Sabato 12: Festa d’inverno, biglietti aperti" /></div>
+          <div class="field field--wide"><label for="c-testo">Testo</label><textarea id="c-testo" name="testo" rows="8" required maxlength="10000" placeholder="Scrivi come scriveresti a un amico. Una riga vuota per un nuovo paragrafo. L’email comincia da sola con «Ciao (nome),»."></textarea></div>
+        </div>
+        <p class="field__hint">Se scegli un evento, sotto il testo compare la sua scheda con la locandina e il bottone “Prendi il biglietto”: il link apre il modulo già compilato con i dati di quel socio.</p>
+        <div class="adm-actions">
+          <button class="btn btn--paper" type="button" data-com="anteprima">Anteprima</button>
+          <div class="field adm-com-prova"><label for="c-prova">Invia una prova a</label><input id="c-prova" type="email" /></div>
+          <button class="btn btn--paper" type="button" data-com="prova">Invia la prova</button>
+        </div>
+        <div class="adm-actions adm-com-invio">
+          <button class="btn" type="button" data-com="invia">Invia a tutti i soci</button>
+          <progress class="adm-progress adm-com-progress" max="1" value="0" hidden></progress>
+          <p class="label adm-com-stato"></p>
+        </div>
+      </form>
+      <iframe class="adm-com-anteprima" title="Anteprima dell’email" hidden></iframe>
+      <h2 class="display h3">Inviate</h2>
+      <ul class="adm-lista adm-campagne"></ul>
+    </section>
+
     <!-- ================= SOCI ================= -->
     <section class="adm-view" data-view="soci" hidden>
       <div class="adm-head">
         <h1 class="display h2">Soci</h1>
         <div class="adm-actions">
+          <button class="btn adm-nuovo-socio" type="button">Aggiungi socio</button>
           <label class="btn btn--paper" for="import-file">Importa lista (Excel o CSV)</label>
           <input id="import-file" type="file" accept=".xlsx,.csv,text/csv" class="sr-only" />
           <button class="btn btn--paper adm-csv" type="button">Scarica libro soci (CSV)</button>
         </div>
       </div>
+
+      <form class="adm-card adm-socio-form" hidden>
+        <h2 class="display h3">Aggiungi socio</h2>
+        <p class="body">Diventa subito socio attivo, con il numero di tessera successivo. Serve almeno l’email o il telefono.</p>
+        <div class="adm-fields">
+          <div class="field"><label for="ns-nome">Nome</label><input id="ns-nome" name="nome" required maxlength="120" /></div>
+          <div class="field"><label for="ns-cognome">Cognome</label><input id="ns-cognome" name="cognome" required maxlength="120" /></div>
+          <div class="field"><label for="ns-nascita">Data di nascita (facoltativa)</label><input id="ns-nascita" name="data_nascita" type="date" /></div>
+          <div class="field"><label for="ns-email">Email</label><input id="ns-email" name="email" type="email" maxlength="120" /></div>
+          <div class="field"><label for="ns-tel">Telefono</label><input id="ns-tel" name="telefono" type="tel" maxlength="30" /></div>
+          <div class="field field--wide"><label for="ns-note">Note (facoltative)</label><input id="ns-note" name="note" maxlength="300" placeholder="Es. tessera fatta all’evento del 12 luglio, pagata in contanti" /></div>
+        </div>
+        <label class="check"><input type="checkbox" name="benvenuto" checked /> <span>Mandagli l’email di benvenuto con il numero di tessera (se ha l’email)</span></label>
+        <div class="adm-actions">
+          <button class="btn" type="submit">Aggiungi</button>
+          <button class="link adm-socio-annulla" type="button">Annulla</button>
+        </div>
+      </form>
 
       <div class="adm-card adm-import" hidden>
         <h2 class="display h3">Importa soci</h2>
@@ -185,7 +235,7 @@ import Base from '../../layouts/Base.astro';
       <p class="adm-conteggio-soci label"></p>
       <div class="adm-tab-wrap">
         <table class="adm-tab adm-soci">
-          <thead><tr><th>N°</th><th>Nome</th><th>Email</th><th>Telefono</th><th>Stato</th><th>Dal</th><th></th></tr></thead>
+          <thead><tr><th>N°</th><th>Nome</th><th>Email</th><th>Telefono</th><th>Stato</th><th>Dal</th><th>Comunicazioni</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -217,6 +267,7 @@ import Base from '../../layouts/Base.astro';
   const route = () => {
     const [view, id] = location.hash.replace('#', '').split('/');
     if (view === 'soci') return caricaSoci();
+    if (view === 'comunicazioni') return apriComunicazioni();
     if (view === 'album' && id) return apriAlbum(id);
     if (view === 'album') return elencoAlbum();
     if (view === 'eventi' && id) return apriEvento(id);
@@ -662,8 +713,9 @@ import Base from '../../layouts/Base.astro';
         <td>${esc(s.telefono ?? '—')}</td>
         <td><span class="adm-badge ${s.stato === 'attivo' ? 'is-on' : ''}">${STATI[s.stato]}</span></td>
         <td>${giorno(s.iscritto_at)}</td>
+        <td>${s.comunicazioni === false ? '<span class="adm-badge is-ko">disiscritto</span>' : s.email ? 'sì' : '—'}</td>
         <td>${s.stato === 'attivo' ? `<button type="button" class="link" data-recesso="${s.id}">Registra recesso</button>` : ''}</td>
-      </tr>`).join('') || '<tr><td colspan="7">Nessun socio.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="8">Nessun socio.</td></tr>';
   };
   $('#s-cerca').addEventListener('input', disegnaSoci);
   $('#s-stato').addEventListener('change', disegnaSoci);
@@ -781,6 +833,125 @@ import Base from '../../layouts/Base.astro';
     $('.adm-import__esito').innerHTML = `<p><strong>Importati ${importati} soci.</strong>${saltati.length ? ` Saltate ${saltati.length} righe:` : ''}</p>${saltati.length ? `<ul class="adm-saltati">${saltati.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}`;
     caricaSoci();
   });
+  /* ---- aggiungi socio a mano ---- */
+  const formSocio = $<HTMLFormElement>('.adm-socio-form');
+  $('.adm-nuovo-socio').addEventListener('click', () => { formSocio.hidden = false; formSocio.scrollIntoView({ behavior: 'smooth', block: 'start' }); (formSocio.elements.namedItem('nome') as HTMLInputElement).focus(); });
+  $('.adm-socio-annulla').addEventListener('click', () => { formSocio.reset(); formSocio.hidden = true; });
+  formSocio.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = new FormData(formSocio);
+    const v = (k: string) => String(f.get(k) ?? '').trim();
+    if (!v('email') && !v('telefono')) return msg('Serve almeno l’email o il telefono.', true);
+    const { data, error } = await sb.rpc('aggiungi_socio', {
+      p_nome: v('nome'), p_cognome: v('cognome'), p_data_nascita: v('data_nascita') || null,
+      p_email: v('email') || null, p_telefono: v('telefono') || null, p_note: v('note') || null,
+    });
+    if (error) {
+      return msg(/gia_presente/.test(error.message) ? 'C’è già un socio con questa email o questo telefono.' : `Non aggiunto: ${error.message}`, true);
+    }
+    let nota = '';
+    if (f.get('benvenuto') === 'on' && data.email) {
+      try { await api('/api/admin/benvenuto', { socio_id: data.id }); nota = ' Email di benvenuto inviata.'; }
+      catch (err) { nota = ` L’email di benvenuto non è partita: ${(err as Error).message}`; }
+    }
+    msg(`${data.nome} ${data.cognome} è socio: tessera N° ${data.numero}.${nota}`, nota.includes('non è partita'));
+    formSocio.reset();
+    formSocio.hidden = true;
+    caricaSoci();
+  });
+
+  /* ================= COMUNICAZIONI ================= */
+  const formCom = $<HTMLFormElement>('.adm-com');
+  const bozza = () => {
+    const f = new FormData(formCom);
+    return { oggetto: String(f.get('oggetto') ?? '').trim(), testo: String(f.get('testo') ?? '').trim(), evento_id: String(f.get('evento_id') ?? '') || null };
+  };
+  let destinatariCom = 0;
+
+  const apriComunicazioni = async () => {
+    mostra('comunicazioni');
+    const { data: u } = await sb.auth.getUser();
+    const prova = $<HTMLInputElement>('#c-prova');
+    if (!prova.value && u.user?.email) prova.value = u.user.email;
+    const { data: ev } = await sb.from('eventi').select('id, titolo, data').eq('stato', 'pubblicato').gte('data', new Date().toISOString().slice(0, 10)).order('data');
+    const sel = $<HTMLSelectElement>('#c-evento');
+    const scelto = sel.value;
+    sel.innerHTML = '<option value="">Nessuno: solo un messaggio</option>' + (ev ?? []).map((e) => `<option value="${e.id}" ${e.id === scelto ? 'selected' : ''}>${esc(e.titolo)} · ${giorno(e.data)}</option>`).join('');
+    try {
+      const c = await api('/api/admin/campagna', { azione: 'conteggio' });
+      destinatariCom = c.destinatari;
+      $('.adm-com-conteggio').textContent = `Arriva a ${c.destinatari} soci attivi con l’email.${c.senzaEmail ? ` ${c.senzaEmail} non hanno un’email valida.` : ''}${c.disiscritti ? ` ${c.disiscritti} hanno chiesto di non ricevere comunicazioni.` : ''}`;
+      $('[data-com="invia"]').textContent = `Invia a ${c.destinatari} soci`;
+    } catch (err) {
+      $('.adm-com-conteggio').textContent = (err as Error).message;
+    }
+    caricaCampagne();
+  };
+
+  const caricaCampagne = async () => {
+    const { data } = await sb.from('campagne').select('id, oggetto, destinatari, inviati, created_at, completata_at').order('created_at', { ascending: false }).limit(30);
+    $('.adm-campagne').innerHTML = (data ?? []).map((c) => `
+      <li class="adm-riga">
+        <strong>${esc(c.oggetto)}</strong>
+        <span class="label">${giorno(c.created_at)} · inviata a ${c.inviati} su ${c.destinatari}</span>
+        ${c.completata_at ? '<span class="adm-badge is-on">Completata</span>' : `<button type="button" class="btn btn--paper" data-riprendi="${c.id}">Riprendi invio</button>`}
+      </li>`).join('') || '<li class="body">Ancora nessuna comunicazione inviata.</li>';
+  };
+
+  const inviaTutto = async (id: string) => {
+    const prog = $<HTMLProgressElement>('.adm-com-progress');
+    const stato = $('.adm-com-stato');
+    prog.hidden = false;
+    prog.max = Math.max(1, destinatariCom);
+    try {
+      for (;;) {
+        const r = await api('/api/admin/campagna', { azione: 'invia', campagna_id: id });
+        prog.value = Math.max(0, prog.max - r.restanti);
+        stato.textContent = r.restanti ? `Inviate… ne mancano ${r.restanti}` : 'Inviata a tutti.';
+        if (!r.restanti) break;
+      }
+      msg('Comunicazione inviata a tutti i soci.');
+    } catch (err) {
+      msg((err as Error).message, true);
+      stato.textContent = 'Invio interrotto: puoi riprenderlo da “Inviate”, qui sotto.';
+    }
+    caricaCampagne();
+  };
+
+  formCom.addEventListener('click', async (e) => {
+    const az = (e.target as HTMLElement).closest<HTMLElement>('[data-com]')?.dataset.com;
+    if (!az) return;
+    const b = bozza();
+    if (!b.oggetto || !b.testo) return msg('Scrivi oggetto e testo.', true);
+    try {
+      if (az === 'anteprima') {
+        const r = await api('/api/admin/campagna', { azione: 'anteprima', ...b });
+        const fr = $<HTMLIFrameElement>('.adm-com-anteprima');
+        fr.srcdoc = r.html;
+        fr.hidden = false;
+        fr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+      if (az === 'prova') {
+        const a = $<HTMLInputElement>('#c-prova').value.trim();
+        await api('/api/admin/campagna', { azione: 'prova', email: a, ...b });
+        msg(`Prova inviata a ${a}. Controlla anche lo spam.`);
+      }
+      if (az === 'invia') {
+        if (!confirm(`Inviare “${b.oggetto}” a ${destinatariCom} soci? Non si può annullare.`)) return;
+        const c = await api('/api/admin/campagna', { azione: 'crea', ...b });
+        destinatariCom = c.destinatari;
+        await inviaTutto(c.id);
+      }
+    } catch (err) {
+      msg((err as Error).message, true);
+    }
+  });
+
+  $('.adm-campagne').addEventListener('click', (e) => {
+    const id = (e.target as HTMLElement).dataset.riprendi;
+    if (id && confirm('Riprendere l’invio? Parte solo verso chi non l’ha ancora ricevuta.')) inviaTutto(id);
+  });
+
 </script>
 
 <style is:global>
@@ -857,6 +1028,10 @@ import Base from '../../layouts/Base.astro';
   .adm-tab { width: 100%; border-collapse: collapse; font-size: var(--step--1); }
   .adm-tab th { text-align: left; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-bottom: var(--rule) solid var(--blue); padding: 8px 12px 8px 0; white-space: nowrap; }
   .adm-tab td { border-bottom: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); padding: 10px 12px 10px 0; vertical-align: top; }
+  .adm-com-prova { min-width: min(320px, 100%); }
+  .adm-com-invio { border-top: var(--rule) solid var(--blue); padding-top: 18px; width: 100%; }
+  .adm-com-anteprima { width: 100%; height: 900px; border: var(--rule) solid var(--blue); background: #fff; }
+  .adm-campagne .adm-riga { grid-template-columns: 1fr auto auto; }
   .adm-saltati { font-size: var(--step--1); max-height: 240px; overflow: auto; }
   @media (max-width: 640px) {
     .adm-riga { grid-template-columns: 1fr auto; }

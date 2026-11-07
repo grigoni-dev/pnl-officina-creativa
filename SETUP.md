@@ -50,6 +50,8 @@ Attenzione: in sandbox gli importi di **11,00 €** e di **42,01 / 42,76 / 42,91
 2. Finché non c'è un dominio lascia `EMAIL_FROM=PNL Officina Creativa <onboarding@resend.dev>`. **Attenzione:** così Resend consegna solo all'email del proprietario dell'account Resend. Va bene per le prove, non per i soci veri.
 3. Quando avete il dominio: **Domains → Add domain**, aggiungi i record DNS che Resend indica e poi imposta `EMAIL_FROM=PNL Officina Creativa <tessera@vostrodominio.it>` e `EMAIL_REPLY_TO` sull'indirizzo che leggete davvero.
 
+**Comunicazioni ai soci.** Il piano gratuito di Resend manda al massimo **100 email al giorno** (3.000 al mese). Per scrivere a tutti i soci in una volta serve il piano **Pro** (20 $ al mese, 50.000 email, senza limite giornaliero). Con il piano gratuito l'invio si ferma a 100 e dal pannello si riprende il giorno dopo, da chi manca.
+
 ## 4. Vercel (il sito)
 
 1. Metti il progetto su GitHub (repository privato va benissimo).

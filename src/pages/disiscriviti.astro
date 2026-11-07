@@ -1,0 +1,71 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import Reg from '../components/Reg.astro';
+import { contatti } from '../data/site';
+import { verifica } from '../lib/firma';
+import { supabaseServizio } from '../lib/supabase';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+// From the link at the bottom of member emails. GET asks for confirmation (so
+// mail scanners that open links don't unsubscribe anyone); POST does it, also
+// as the one-click unsubscribe of RFC 8058 that mail apps send.
+const token = Astro.url.searchParams.get('t') ?? '';
+const socioId = verifica('disiscrivi', token);
+let stato: 'chiedi' | 'fatto' | 'riattivato' | 'non-valido' = socioId ? 'chiedi' : 'non-valido';
+
+if (socioId && Astro.request.method === 'POST') {
+  const f = await Astro.request.formData().catch(() => null);
+  const riattiva = f?.get('azione') === 'riattiva';
+  const { error } = await supabaseServizio()
+    .from('soci')
+    .update(riattiva ? { comunicazioni: true, disiscritto_at: null } : { comunicazioni: false, disiscritto_at: new Date().toISOString() })
+    .eq('id', socioId);
+  if (error) console.error('disiscriviti', error);
+  if (f?.get('List-Unsubscribe') === 'One-Click') return new Response(null, { status: 204 });
+  stato = riattiva ? 'riattivato' : 'fatto';
+}
+---
+<Base title="Comunicazioni · PNL Officina Creativa" description="Gestisci le email di PNL Officina Creativa." noindex>
+  <Nav />
+  <main id="contenuto" class="dis">
+    <div class="wrap dis__in">
+      {stato === 'chiedi' && (
+        <>
+          <Reg as="h1" class="display h2" text="Basta email?" />
+          <p class="lede">Se confermi, non ti mandiamo più le comunicazioni sugli eventi. Resti socio e le email della tessera e dei biglietti continuano ad arrivare.</p>
+          <form method="post"><button class="btn" type="submit">Sì, non voglio più riceverle</button></form>
+        </>
+      )}
+      {stato === 'fatto' && (
+        <>
+          <Reg as="h1" class="display h2" text="Fatto." />
+          <p class="lede">Non riceverai più le nostre comunicazioni. Se cambi idea:</p>
+          <form method="post"><input type="hidden" name="azione" value="riattiva" /><button class="btn btn--paper" type="submit">Voglio riceverle di nuovo</button></form>
+        </>
+      )}
+      {stato === 'riattivato' && (
+        <>
+          <Reg as="h1" class="display h2" text="Bentornato." />
+          <p class="lede">Riceverai di nuovo le nostre comunicazioni.</p>
+          <a class="btn" href="/eventi">Guarda i prossimi eventi</a>
+        </>
+      )}
+      {stato === 'non-valido' && (
+        <>
+          <Reg as="h1" class="display h2" text="Link non valido." />
+          <p class="lede">Usa il link in fondo a una nostra email, oppure scrivici a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a> e ti togliamo noi.</p>
+        </>
+      )}
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .dis { min-height: 70svh; padding-block: clamp(48px, 8vw, 120px); }
+  .dis__in { display: grid; gap: 28px; justify-items: start; max-width: 720px; }
+</style>

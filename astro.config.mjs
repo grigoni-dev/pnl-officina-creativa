@@ -22,8 +22,12 @@ export default defineConfig({
       SUMUP_API_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       EMAIL_FROM: envField.string({ context: 'server', access: 'secret', default: 'PNL Officina Creativa <onboarding@resend.dev>' }),
+      // Only for tests against a local fake; defaults to https://api.resend.com.
+      RESEND_API_URL: envField.string({ context: 'server', access: 'secret', optional: true }),
       EMAIL_REPLY_TO: envField.string({ context: 'server', access: 'secret', optional: true }),
       RATE_LIMIT_SALT: envField.string({ context: 'server', access: 'secret', default: 'pnl' }),
+      // Signs the personal links in emails (ticket form prefill, unsubscribe). Falls back to the service key.
+      LINK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
 });

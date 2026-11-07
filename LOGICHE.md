@@ -80,6 +80,15 @@ Ci sono due tipi di account:
 - **admin**: eventi, biglietti e ingressi, album, soci (con l'import), rimborsi;
 - **ingresso**: solo lo scanner.
 
+## 4bis. Soci aggiunti a mano e comunicazioni
+
+**Aggiungi socio.** Dal pannello (Soci → *Aggiungi socio*): nome, cognome, email e/o telefono, data di nascita facoltativa, note. Diventa subito attivo con il numero successivo; se ha l'email può ricevere l'email di benvenuto con la tessera.
+
+**Comunicazioni.** Dal pannello (*Comunicazioni*): oggetto, testo e, se si vuole, un evento da annunciare. Si vedono l'anteprima e si manda una prova a sé stessi, poi si invia a tutti i soci attivi con l'email.
+- Se c'è un evento, l'email mostra la scheda con la locandina e il bottone **"Prendi il biglietto"**: il link è personale e apre il modulo già compilato con i dati del socio.
+- In fondo a ogni email c'è il link per **non ricevere più comunicazioni** (anche "un clic" dai programmi di posta). Chi si disiscrive resta socio e riceve ancora le email di tessera e biglietti.
+- L'invio va a lotti di 100. Se si interrompe (per esempio per il limite giornaliero di Resend), si riprende da chi manca, senza doppioni.
+
 ## 5. Cose da verificare con il commercialista
 
 Non blocca lo sviluppo, ma va chiarito prima di vendere:

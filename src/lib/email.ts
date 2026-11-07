@@ -1,12 +1,37 @@
-import { EMAIL_FROM, EMAIL_REPLY_TO, RESEND_API_KEY } from 'astro:env/server';
+import { EMAIL_FROM, EMAIL_REPLY_TO, RESEND_API_KEY, RESEND_API_URL } from 'astro:env/server';
+
+const resend = (path: string) => `${(RESEND_API_URL || 'https://api.resend.com').replace(/\/$/, '')}${path}`;
 import { NonConfigurato } from './supabase';
 
-type Messaggio = { to: string; subject: string; html: string; text: string };
+type Messaggio = { to: string; subject: string; html: string; text: string; headers?: Record<string, string> };
+
+/**
+ * Sends up to 100 emails in one Resend call (the batch endpoint). Throws on
+ * failure, e.g. when the daily quota of the free plan is used up.
+ */
+export async function inviaLotto(messaggi: Messaggio[]): Promise<void> {
+  if (!RESEND_API_KEY) throw new NonConfigurato('Resend (RESEND_API_KEY)');
+  if (!messaggi.length) return;
+  const res = await fetch(resend('/emails/batch'), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(messaggi.map((m) => ({
+      from: EMAIL_FROM,
+      to: [m.to],
+      subject: m.subject,
+      html: m.html,
+      text: m.text,
+      ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {}),
+      ...(m.headers ? { headers: m.headers } : {}),
+    }))),
+  });
+  if (!res.ok) throw new Error(`Resend ${res.status}: ${(await res.text()).slice(0, 300)}`);
+}
 
 /** Sends one email through Resend's HTTP API. Throws on failure so callers can retry. */
 export async function inviaEmail(m: Messaggio): Promise<void> {
   if (!RESEND_API_KEY) throw new NonConfigurato('Resend (RESEND_API_KEY)');
-  const res = await fetch('https://api.resend.com/emails', {
+  const res = await fetch(resend('/emails'), {
     method: 'POST',
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -16,12 +41,13 @@ export async function inviaEmail(m: Messaggio): Promise<void> {
       html: m.html,
       text: m.text,
       ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {}),
+      ...(m.headers ? { headers: m.headers } : {}),
     }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
 }
 
-const esc = (s: string) =>
+export const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** The welcome email: the membership card, in the site's two inks. */
