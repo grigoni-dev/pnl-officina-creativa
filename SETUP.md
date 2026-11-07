@@ -5,7 +5,7 @@ Il sito gira su **Vercel**. I dati (soci, album, foto) stanno su **Supabase**, i
 ## 1. Supabase (database, foto, login admin)
 
 1. Crea un progetto su supabase.com, **regione Europa** (Francoforte) per il GDPR. Annota la password del database.
-2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Poi fai lo stesso, in ordine, con `0002_libro_soci_ridotto.sql` e `0003_sumup.sql`. La `0002` se avevi già eseguito una versione precedente dello 0001 adegua la tabella dei soci, altrimenti non cambia nulla. Insieme creano:
+2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Poi fai lo stesso, in ordine, con tutte le altre migrazioni della cartella: `0002_libro_soci_ridotto.sql`, `0003_sumup.sql`, `0004_soci_manuali_comunicazioni.sql`, `0005_elimina_evento.sql`. Si possono rieseguire senza problemi. Insieme creano:
    - le tabelle di soci, eventi, ordini, biglietti, album, foto e staff;
    - le regole di accesso;
    - i bucket `album` e `locandine`;
@@ -24,6 +24,44 @@ Il sito gira su **Vercel**. I dati (soci, album, foto) stanno su **Supabase**, i
    - *service_role* (segreta, mai nel browser) → `SUPABASE_SERVICE_ROLE_KEY`
 
 Il piano gratuito ha 1 GB di spazio per le foto. Il pannello le ridimensiona prima di caricarle (circa 300 KB l'una più la miniatura), quindi ci stanno circa 3.000 foto. Va considerato anche che il piano gratuito mette in pausa i progetti inattivi dopo una settimana senza visite.
+
+## Gestire chi accede al pannello
+
+Il pannello è su `/admin`. Gli account si creano solo da Supabase: le registrazioni libere sono chiuse.
+
+Ci sono due ruoli:
+- **admin**: tutto il pannello (eventi, biglietti, rimborsi, album, soci, comunicazioni);
+- **ingresso**: solo lo scanner dei biglietti (`/admin/ingresso`), senza accesso ai dati dei soci.
+
+**Aggiungere una persona**
+1. Supabase → **Authentication → Users → Add user → Create new user**: email e password, spunta **Auto Confirm User**, *Create user*.
+2. Supabase → **SQL Editor → New query**, con l'email giusta:
+   ```sql
+   -- accesso completo
+   insert into staff (user_id, ruolo)
+   select id, 'admin' from auth.users where email = 'nome@esempio.it';
+
+   -- solo ingresso
+   insert into staff (user_id, ruolo)
+   select id, 'ingresso' from auth.users where email = 'nome@esempio.it';
+   ```
+   Deve rispondere "1 row". Se dice "0 rows", l'email non corrisponde all'account creato.
+3. La persona entra da `https://<dominio>/admin` con la sua email e password. Chi ha il ruolo *ingresso* finisce direttamente sullo scanner.
+
+**Vedere chi ha accesso**
+```sql
+select u.email, s.ruolo from staff s join auth.users u on u.id = s.user_id;
+```
+
+**Cambiare ruolo**
+```sql
+update staff set ruolo = 'ingresso'
+where user_id = (select id from auth.users where email = 'nome@esempio.it');
+```
+
+**Togliere l'accesso**: elimina l'utente da **Authentication → Users** (sparisce anche dallo staff).
+
+**Password dimenticata**: in **Authentication → Users**, sull'utente, imposta una password nuova e comunicagliela. "Send password recovery" manda un'email solo se in Supabase è configurato l'invio email.
 
 ## 2. SumUp (quota e biglietti)
 
