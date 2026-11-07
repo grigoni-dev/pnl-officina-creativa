@@ -1,22 +1,13 @@
 ---
 import Stub from '../components/Stub.astro';
-import { contatti } from '../data/site';
+import { associazione, contatti } from '../data/site';
 
-/**
- * BOZZA da far verificare all'associazione. CLIENT SLOT: sede legale e codice
- * fiscale dell'associazione (titolare), e durata di conservazione decisa.
- */
-const titolare = {
-  nome: 'PNL Officina Creativa, associazione culturale',
-  sede: '[sede legale da inserire]',
-  cf: '[codice fiscale dell’associazione da inserire]',
-};
+/** Informativa ai sensi degli artt. 13–14 GDPR. Dati del titolare in src/data/site.ts. */
 ---
 <Stub title="Privacy" heading="Informativa privacy">
-  <p class="stamp stamp--inline">Bozza da verificare</p>
-
   <h2 class="display h3">Chi tratta i tuoi dati</h2>
-  <p>Il titolare del trattamento è {titolare.nome}, con sede in {titolare.sede}, C.F. {titolare.cf}. Per qualsiasi richiesta scrivi a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>
+  <p>Il titolare del trattamento è l’{associazione.denominazione}, con sede in {associazione.sede}, C.F. {associazione.cf}, P.IVA {associazione.piva}, nella persona del presidente pro tempore.</p>
+  <p>Per qualsiasi richiesta sui tuoi dati scrivi a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a> oppure, se ti serve una comunicazione con valore legale, alla PEC <a class="link" href={`mailto:${associazione.pec}`}>{associazione.pec}</a>.</p>
 
   <h2 class="display h3">Quali dati e perché</h2>
   <p>Quando ti iscrivi raccogliamo nome, cognome, data di nascita, email e telefono. Email e telefono servono anche a riconoscerti come socio. Questi dati servono a tenere il libro soci, come prevedono la legge e lo statuto, e a mandarti la tessera e le comunicazioni dell’associazione che riguardano la tua iscrizione. Per chi era già socio prima del sito abbiamo riportato nome, cognome, email e telefono dall’elenco che tenevamo.</p>

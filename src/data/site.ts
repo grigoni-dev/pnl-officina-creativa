@@ -14,6 +14,15 @@ export const contatti = {
   tiktok: null as string | null,
 };
 
+/** Dati dell'associazione (titolare del trattamento, footer). */
+export const associazione = {
+  denominazione: 'Associazione musicale PNL Officina Creativa',
+  sede: 'Via Gaia Da Camino 3, 31046 Oderzo (TV)', // dallo statuto, art. 1 (confermata)
+  cf: '94167550261',
+  piva: '05543420268',
+  pec: 'pnl.officinacreativa@pec.it',
+};
+
 export const quota = { importo: 5, valuta: '€' };
 
 /** La pagina con lo statuto (il PDF originale, se pubblicato, va in public/statuto.pdf). */

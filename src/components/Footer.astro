@@ -1,5 +1,5 @@
 ---
-import { contatti, crediti, statuto } from '../data/site';
+import { associazione, contatti, crediti, statuto } from '../data/site';
 
 const social = [
   { nome: 'Instagram', url: contatti.instagram },
@@ -25,7 +25,7 @@ const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.licens
         <li><a class="link" href="/eventi">Prossimi eventi</a></li>
         <li><a class="link" href="/album">Album delle foto</a></li>
         <li><a class="link" href="/tesseramento">Tessera associativa</a></li>
-        <li><a class="link" href={statuto} target="_blank">Statuto</a></li>
+        <li><a class="link" href={statuto}>Statuto</a></li>
         <li><a class="link" href="/verifica">Verifica la tessera</a></li>
         <li><a class="link" href="/privacy">Privacy</a></li>
         {social.map((s) => <li><a class="link" href={s.url!} rel="me">{s.nome}</a></li>)}
@@ -33,6 +33,7 @@ const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.licens
     </nav>
   </div>
   <div class="wrap">
+    <p class="foot__legale">{associazione.denominazione} · {associazione.sede} · C.F. {associazione.cf} · P.IVA {associazione.piva} · PEC <a href={`mailto:${associazione.pec}`}>{associazione.pec}</a></p>
     {(fotografi.length > 0 || stock.length > 0) && (
       <p class="foot__credits">
         {fotografi.length > 0 && <>Foto di {fotografi.join(', ')}.</>}
@@ -50,6 +51,9 @@ const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.licens
   .foot__mark { grid-column: 1 / 7; font-size: clamp(6rem, 18vw, 15rem); line-height: 0.75; letter-spacing: -0.04em; }
   .foot__col { grid-column: span 3; display: grid; gap: 14px; align-content: end; }
   .foot__col ul { display: grid; gap: 10px; }
+  .foot__legale { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: 0.8rem; max-width: 110ch; }
+  .foot__legale a { color: inherit; }
+  .foot__legale + .foot__credits { margin-top: 8px; padding-top: 0; border-top: 0; }
   .foot__credits { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: 0.8rem; max-width: 110ch; }
   @media (max-width: 760px) {
     .foot__mark { grid-column: 1 / -1; }

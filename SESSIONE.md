@@ -54,7 +54,7 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.
 2. Dominio, per le email (Resend) e per il sito.
-3. Completare e far verificare l'informativa privacy; confermare la regola "solo maggiorenni" con lo statuto.
+3. Far rileggere l’informativa privacy (dati del titolare completi); confermare la regola "solo maggiorenni" con lo statuto.
 4. Sentire il commercialista sui biglietti venduti a chi non è socio (IVA, corrispettivi, SIAE).
 
 ## Materiale che manca dal cliente
