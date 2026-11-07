@@ -8,7 +8,7 @@ import credits from './photo-credits.json';
  */
 export const contatti = {
   email: 'pnl.officinacreativa@gmail.com',
-  emailProvvisoria: true,
+  emailProvvisoria: false,
   instagram: null as string | null,
   facebook: null as string | null,
   tiktok: null as string | null,
