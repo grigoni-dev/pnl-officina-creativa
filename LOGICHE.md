@@ -30,6 +30,8 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 
 **Aggiungi socio a mano.** Se email o telefono sono già di un socio, il pannello dice chi è (nome e numero di tessera).
 
+**Eliminare un socio.** Dal pannello (Soci → *Elimina* sulla riga) si cancella chi è stato inserito per errore o per prova. Il numero di tessera non viene riusato. Chi lascia l'associazione non si elimina: si registra il recesso, che lo tiene nel libro soci.
+
 **Verifica tessera** (`/verifica`). Si inserisce email o telefono e il sito risponde solo *attiva* o *non trovata*. Non mostra mai nomi né altri dati. Il limite è di 20 richieste ogni 10 minuti per connessione.
 - Da sapere: chi conosce l'email o il telefono di qualcuno può scoprire se quella persona è socia. Per un'associazione culturale è un rischio basso, ma va detto anche nell'informativa.
 

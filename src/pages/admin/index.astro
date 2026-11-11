@@ -821,7 +821,7 @@ import Base from '../../layouts/Base.astro';
         <td><span class="adm-badge ${s.stato === 'attivo' ? 'is-on' : ''}">${STATI[s.stato]}</span></td>
         <td>${giorno(s.iscritto_at)}</td>
         <td>${s.comunicazioni === false ? '<span class="adm-badge is-ko">disiscritto</span>' : s.email ? 'sì' : '—'}</td>
-        <td>${s.stato === 'attivo' ? `<button type="button" class="link" data-recesso="${s.id}">Registra recesso</button>` : ''}</td>
+        <td class="adm-soci__azioni">${s.stato === 'attivo' ? `<button type="button" class="link" data-recesso="${s.id}">Registra recesso</button>` : ''}${s.stato !== 'in_attesa' ? ` <button type="button" class="link adm-elimina" data-elimina="${s.id}">Elimina</button>` : ''}</td>
       </tr>`).join('') || '<tr><td colspan="8">Nessun socio.</td></tr>';
   };
   $('#s-cerca').addEventListener('input', disegnaSoci);
@@ -829,6 +829,23 @@ import Base from '../../layouts/Base.astro';
   $('#s-incompleti').addEventListener('change', disegnaSoci);
 
   $('.adm-soci').addEventListener('click', async (e) => {
+    const elimina = (e.target as HTMLElement).dataset.elimina;
+    if (elimina) {
+      const s = soci.find((x) => x.id === elimina);
+      if (!s) return;
+      const conferma = `Eliminare ${s.nome} ${s.cognome}${s.numero ? ` (tessera N° ${s.numero})` : ''}?\n\n` +
+        'Solo per chi è stato inserito per errore o per prova: il socio sparisce dal libro soci e il numero di tessera non viene riusato. ' +
+        'Se invece lascia l’associazione, usa “Registra recesso”.';
+      if (!confirm(conferma)) return;
+      try {
+        await api('/api/admin/elimina-socio', { socio_id: s.id });
+        msg(`${s.nome} ${s.cognome} eliminato.`);
+        caricaSoci();
+      } catch (err) {
+        msg(`Non eliminato: ${(err as Error).message}`, true);
+      }
+      return;
+    }
     const id = (e.target as HTMLElement).dataset.recesso;
     const s = soci.find((x) => x.id === id);
     if (!s || !confirm(`Registrare il recesso di ${s.nome} ${s.cognome} (tessera N° ${s.numero})?`)) return;
@@ -1156,6 +1173,8 @@ import Base from '../../layouts/Base.astro';
   .adm-com-invio { border-top: var(--rule) solid var(--blue); padding-top: 18px; width: 100%; }
   .adm-com-anteprima { width: 100%; height: 900px; border: var(--rule) solid var(--blue); background: #fff; }
   .adm-campagne .adm-riga { grid-template-columns: 1fr auto auto; }
+  .adm-soci__azioni { white-space: nowrap; }
+  .adm-elimina { color: var(--overprint); }
   .adm-saltati { font-size: var(--step--1); max-height: 240px; overflow: auto; }
   @media (max-width: 640px) {
     .adm-riga { grid-template-columns: 1fr auto; }
