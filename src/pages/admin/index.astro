@@ -247,7 +247,7 @@ import Base from '../../layouts/Base.astro';
             <option value="">Tutti</option>
           </select>
         </div>
-        <label class="check"><input type="checkbox" id="s-incompleti" /> <span>Solo senza data di nascita</span></label>
+        <label class="check"><input type="checkbox" id="s-incompleti" /> <span>Solo con dati mancanti</span></label>
       </div>
       <p class="adm-conteggio-soci label"></p>
       <div class="adm-tab-wrap">
@@ -809,13 +809,15 @@ import Base from '../../layouts/Base.astro';
     const q = $<HTMLInputElement>('#s-cerca').value.trim().toLowerCase();
     const st = $<HTMLSelectElement>('#s-stato').value;
     const inc = $<HTMLInputElement>('#s-incompleti').checked;
-    const righe = soci.filter((s) => (!st || s.stato === st) && (!inc || !s.dati_completi) &&
+    // what the libro soci is missing for this member, in words
+    const mancano = (s: Record<string, any>) => [!s.data_nascita && 'data di nascita', !s.email && 'email', !s.telefono && 'telefono'].filter(Boolean).join(', ');
+    const righe = soci.filter((s) => (!st || s.stato === st) && (!inc || mancano(s)) &&
       (!q || [s.nome, s.cognome, s.email, s.telefono, s.numero].join(' ').toLowerCase().includes(q)));
     $('.adm-conteggio-soci').textContent = `${righe.length} su ${soci.length}`;
     $('.adm-soci tbody').innerHTML = righe.map((s) => `
       <tr>
         <td>${s.numero ?? '—'}</td>
-        <td>${esc(s.nome)} ${esc(s.cognome)}${s.dati_completi ? '' : ' <span class="adm-badge">manca la data di nascita</span>'}</td>
+        <td>${esc(s.nome)} ${esc(s.cognome)}${mancano(s) ? ` <span class="adm-badge">manca: ${mancano(s)}</span>` : ''}</td>
         <td>${esc(s.email ?? '—')}</td>
         <td>${esc(s.telefono ?? '—')}</td>
         <td><span class="adm-badge ${s.stato === 'attivo' ? 'is-on' : ''}">${STATI[s.stato]}</span></td>

@@ -14,7 +14,8 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 
 **Soci che esistono già.** Dal pannello admin si carica la vostra lista in CSV. Ogni persona diventa socio *attivo* e riceve un numero di tessera progressivo. Di default non le mandiamo nessuna email.
 - La lista ha le colonne **Data/Ora, Email, Nome, Cognome, Telefono**. Si carica il file Excel (.xlsx) o un CSV esportato da Excel. *Data/Ora* diventa la data d'iscrizione.
-- Alla lista manca la data di nascita: chi viene importato è segnato **"manca la data di nascita"**, così si sa a chi chiederla.
+- Se alla lista mancano dei dati, nel pannello il socio ha il bollino **"manca: …"** con quello che manca (data di nascita, email, telefono), così si sa cosa chiedergli. Il filtro *Solo con dati mancanti* li mostra tutti.
+- Senza la colonna della data d'iscrizione (o se una data non si legge), la data d'iscrizione è il momento dell'import. Senza telefono il socio si riconosce solo dall'email.
 - Si può caricare anche il CSV che il pannello esporta ("Scarica libro soci"): legge anche la data di nascita e la data d'iscrizione; le righe con stato diverso da *attivo* (receduti) non vengono importate. I numeri di tessera si riassegnano sempre, in ordine di iscrizione.
 - Se una riga ha la stessa email o lo stesso telefono di un socio già presente (attivo o receduto), viene saltata. A fine import il riepilogo elenca ogni riga saltata con il nome e il socio con cui coincide.
 - Se una persona importata aveva una richiesta in attesa, la richiesta si chiude da sola.
