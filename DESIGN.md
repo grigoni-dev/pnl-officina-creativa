@@ -164,6 +164,7 @@ A riso palette: one stock and two transparent inks, plus the tone their overlap 
 - **Headline** (900, wdth 125, step 3): Section titles, usually printed on two plates.
 - **Title** (900, wdth 125, step 2, line height 0.95): Sub-items (list entries, stations, side columns).
 - **Lede** (500, step 1, line height 1.35, max 34ch to 44ch): The opening paragraph under a display title.
+- **Small** (step -2, weight from its context): The stamp on stand-ins, the "Officina Creativa" line of the mark, the legal and credit lines in the footer, panel badges.
 - **Body** (450, step 0, line height 1.5, max 62ch): Running text.
 - **Label** (700, step -1, 0.06em tracking, uppercase): Field labels, metadata lines under plates, the colophon line under the lede, the tessera header.
 - **Button** (800, wdth 112, step 0, line height 1.1): Every button.
@@ -181,7 +182,7 @@ A 12-column grid (`repeat(12, minmax(0, 1fr))`) inside a 1440px container with a
 
 Compositions are asymmetric and overlap like paste-up: the hero sets the display title across columns 1 to 8 and a tall print in 9 to 12, with the tessera card overlapping the print's lower-left corner. Lists read as a zine contents page: rows divided by plate rules, title left and text right. The archive is a fixed-scale series of 4:5 plates, five across.
 
-Breakpoints at 1080px and 760px. At 1080px the nav collapses, the grid stacks and the archive becomes a horizontal scroll-snap strip (40% per plate, 72% under 760px). Under 760px everything is one column, buttons go full width, and a fixed bottom "Diventa socio" action bar appears. It steps aside while a signup form or the footer is on screen. The masthead is sticky (76px plus the 3px rule).
+Breakpoints at 1080px and 760px. At 1080px the nav collapses, the grid stacks and the archive becomes a horizontal scroll-snap strip (40% per plate, 72% under 760px). Under 760px everything is one column, buttons go full width, and a fixed bottom "Diventa socio" action bar appears. It steps aside while a signup form or the footer is on screen. The masthead is sticky (76px plus the 3px rule, as `--mast-row` and `--mast-h`: anything that needs to clear it uses `--mast-h`).
 
 ## Elevation & Depth
 

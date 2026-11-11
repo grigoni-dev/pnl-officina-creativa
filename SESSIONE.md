@@ -1,4 +1,6 @@
-# Dove siamo rimasti (6 novembre 2026)
+# Dove siamo rimasti (11 novembre 2026)
+
+Il sito è online su https://pnl-officina-creativa.vercel.app/.
 
 ## Fatto
 - PRODUCT.md: il contesto del prodotto (tessera da 5 € pagata una volta, stato attivo/receduto, sito in italiano).
@@ -51,6 +53,15 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 
 - **Pagamenti con SumUp** (7 novembre) invece di Stripe, per le commissioni più basse sui piccoli importi. Pagina `/pagamento/<checkout>` con il modulo carta di SumUp; notifiche su `/api/sumup-webhook` (il server rilegge sempre il pagamento da SumUp); rimborsi via API. Migrazione `0003_sumup.sql`: colonne `checkout_id`/`transazione_id` e **diritto di prevendita** facoltativo per evento.
 
+## 7 e 11 novembre
+- Pagina `/statuto`, "Tessera associativa" ovunque, dati del titolare nell'informativa e nel footer.
+- Pannello: si può eliminare un evento che non ha mai venduto biglietti (migrazione `0005`); `/eventi` mostra prima i prossimi, poi i passati.
+- `SETUP.md` spiega come gestire chi accede al pannello.
+- Ritocchi di design (11 novembre):
+  - sulla tessera il segnaposto "Il tuo nome qui" è stampato a piena intensità sulla lastra blu, e la lastra rosa compare solo quando si scrive il nome;
+  - nuovo gradino di scala `--step--2` per i testi piccoli (timbro, sottotitolo del marchio, righe legali del footer, badge del pannello); le altre dimensioni scritte a mano usano i gradini esistenti;
+  - l'altezza dell'header è nelle variabili `--mast-row` e `--mast-h`, usate da hero, menu mobile, scheda evento e `scroll-padding`.
+
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.
 2. Dominio, per le email (Resend) e per il sito.
@@ -68,7 +79,3 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 - Avvio: `npm run dev`. Build: `npm run build`.
 - Album: le foto escono in ordine di nome file; la copertina si sceglie dal pannello.
 - Le foto si mostrano pulite (`src/components/Print.astro`). La foto della home è `src/assets/photos/folla.jpg`.
-- Piccole cose rimaste da sistemare:
-  - il segnaposto del nome sulla tessera è a basso contrasto;
-  - alcune dimensioni di testo piccole stanno fuori dalla scala tipografica;
-  - l'altezza dell'header (79px) è scritta a mano nell'hero e nel menu.

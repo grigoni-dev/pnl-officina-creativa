@@ -14,12 +14,17 @@
   --max: 1440px;
   --rule: 3px;
 
+  /* sticky masthead: the row plus its bottom rule */
+  --mast-row: 76px;
+  --mast-h: calc(var(--mast-row) + var(--rule));
+
   /* misregistration of the second plate, at rest */
   --mis-x: 0.06em;
   --mis-y: 0.04em;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
+  --step--2: clamp(0.75rem, 0.73rem + 0.1vw, 0.8rem);
   --step--1: clamp(0.875rem, 0.84rem + 0.15vw, 0.95rem);
   --step-0: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
   --step-1: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
@@ -36,7 +41,7 @@
 *::before,
 *::after { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; scroll-padding-top: 96px; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-top: calc(var(--mast-h) + 16px); }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 
 /* paper tooth: a faint fibre noise in the sheet itself, under the content (never over photos) */
@@ -207,7 +212,7 @@ a { color: inherit; text-underline-offset: 0.18em; text-decoration-thickness: 2p
   border: 2px solid var(--pink);
   color: var(--overprint);
   background: var(--paper);
-  font-size: 0.72rem;
+  font-size: var(--step--2);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;

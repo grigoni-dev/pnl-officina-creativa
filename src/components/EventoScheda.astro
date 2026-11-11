@@ -84,10 +84,10 @@ const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti 
   .ev__poster-vuoto { aspect-ratio: 3 / 4; display: grid; place-content: center; text-align: center; color: var(--paper); font-size: clamp(4rem, 9vw, 9rem); line-height: 0.8; }
   .ev__poster-vuoto span:last-child { font-size: 0.4em; text-transform: uppercase; }
   .ev--annullato .ev__poster img { filter: grayscale(1) contrast(0.9); opacity: 0.7; }
-  .ev__annullato { font-size: 1rem; top: 16px; right: 16px; padding: 6px 12px; }
+  .ev__annullato { font-size: var(--step-0); top: 16px; right: 16px; padding: 6px 12px; }
 
   .ev__info { display: grid; gap: 20px; align-content: start; justify-items: start; }
-  .ev--grande .ev__info, .ev--dettaglio .ev__info { position: sticky; top: 110px; }
+  .ev--grande .ev__info, .ev--dettaglio .ev__info { position: sticky; top: calc(var(--mast-h) + 32px); }
   .ev__data { display: flex; align-items: baseline; gap: 14px; }
   .ev__data :global(.ev__giorno) { font-size: clamp(3.5rem, 7vw, 6.5rem); line-height: 0.8; }
   .ev__mese { font-size: var(--step-0); }

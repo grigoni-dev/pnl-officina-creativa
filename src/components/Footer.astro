@@ -51,10 +51,10 @@ const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.licens
   .foot__mark { grid-column: 1 / 7; font-size: clamp(6rem, 18vw, 15rem); line-height: 0.75; letter-spacing: -0.04em; }
   .foot__col { grid-column: span 3; display: grid; gap: 14px; align-content: end; }
   .foot__col ul { display: grid; gap: 10px; }
-  .foot__legale { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: 0.8rem; max-width: 110ch; }
+  .foot__legale { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: var(--step--2); max-width: 110ch; }
   .foot__legale a { color: inherit; }
   .foot__legale + .foot__credits { margin-top: 8px; padding-top: 0; border-top: 0; }
-  .foot__credits { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: 0.8rem; max-width: 110ch; }
+  .foot__credits { margin-top: clamp(40px, 5vw, 64px); padding-top: 14px; border-top: var(--rule) solid var(--paper); font-size: var(--step--2); max-width: 110ch; }
   @media (max-width: 760px) {
     .foot__mark { grid-column: 1 / -1; }
     .foot__col { grid-column: 1 / -1; }

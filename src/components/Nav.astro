@@ -81,7 +81,7 @@ const links = [
     display: flex;
     align-items: center;
     gap: clamp(16px, 3vw, 40px);
-    min-height: 76px;
+    min-height: var(--mast-row);
   }
   .mark {
     display: flex;
@@ -98,7 +98,7 @@ const links = [
     letter-spacing: -0.04em;
   }
   .mark__sub {
-    font-size: 0.78rem;
+    font-size: var(--step--2);
     font-weight: 700;
     line-height: 1.15;
     letter-spacing: 0.05em;
@@ -129,7 +129,7 @@ const links = [
 
   .menu {
     position: fixed;
-    inset: 79px 0 0;
+    inset: var(--mast-h) 0 0;
     background: var(--paper);
     padding-block: 24px 40px;
     display: grid;
@@ -158,7 +158,7 @@ const links = [
   @media (max-width: 760px) {
     .mast__cta, .mark__sub { display: none; }
     .mast__menu { display: inline-flex; }
-    .mast__row { min-height: 76px; }
+    .mast__row { min-height: var(--mast-row); }
     .actionbar {
       display: flex;
       position: fixed;
