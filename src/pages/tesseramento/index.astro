@@ -71,7 +71,7 @@ const gruppi = gruppiSocio();
         </ol>
       </header>
 
-      <form class="modulo__form" method="post" novalidate data-hides-actionbar>
+      <form class="modulo__form" method="post" novalidate>
         {errori.gia && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">{errori.gia} <a class="link" href="/verifica">Verifica la tessera</a></p>}
         {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
         {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}

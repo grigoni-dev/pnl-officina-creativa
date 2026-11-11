@@ -57,7 +57,7 @@ const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti 
       <div class="ev__descr">{paragrafi.map((p) => <p>{p}</p>)}</div>
     )}
 
-    <div class="ev__azione" data-hides-actionbar>
+    <div class="ev__azione">
       {vendita === 'aperta' && (esterno
         ? <a class="btn" href={linkBiglietti(e)} target="_blank" rel="noopener">{etichettaBottone(e)} ↗</a>
         : <a class="btn" href={linkBiglietti(e)}>{etichettaBottone(e)}</a>)}

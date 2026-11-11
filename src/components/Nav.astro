@@ -1,4 +1,6 @@
 ---
+import { contatti } from '../data/site';
+
 const links = [
   { href: '/#chi-siamo', label: 'Chi siamo' },
   { href: '/eventi', label: 'Eventi' },
@@ -6,6 +8,11 @@ const links = [
   { href: '/#tessera', label: 'Tessera' },
   { href: '/#contatti', label: 'Contatti' },
 ];
+// Simple glyphs in the ink colour, not the brands' own colours.
+const social = [
+  { nome: 'Instagram', url: contatti.instagram, path: 'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm0 2.2A2.8 2.8 0 0 0 4.2 7v10A2.8 2.8 0 0 0 7 19.8h10a2.8 2.8 0 0 0 2.8-2.8V7A2.8 2.8 0 0 0 17 4.2H7Zm5 3.3a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2.2a2.3 2.3 0 1 0 0 4.6 2.3 2.3 0 0 0 0-4.6Zm5.2-3.6a1.1 1.1 0 1 1 0 2.2 1.1 1.1 0 0 1 0-2.2Z' },
+  { nome: 'Facebook', url: contatti.facebook, path: 'M13.5 22v-8.2h2.8l.4-3.2h-3.2V8.5c0-.9.3-1.6 1.6-1.6h1.7V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.3H7.3v3.2h2.8V22h3.4Z' },
+].filter((x) => x.url);
 ---
 <header class="mast">
   <div class="wrap mast__row">
@@ -22,7 +29,15 @@ const links = [
       </ul>
     </nav>
 
-    <a class="btn mast__cta" href="/tesseramento">Tessera associativa · 5&nbsp;€</a>
+    {social.length > 0 && (
+      <ul class="mast__social">
+        {social.map((x) => (
+          <li><a href={x.url!} target="_blank" rel="noopener me" aria-label={`${x.nome} (si apre in una nuova scheda)`}>
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d={x.path} fill="currentColor" /></svg>
+          </a></li>
+        ))}
+      </ul>
+    )}
 
     <button class="mast__menu" type="button" aria-expanded="false" aria-controls="menu">
       <span class="sr-only">Apri il menu</span>
@@ -35,11 +50,14 @@ const links = [
       {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
       <li><a href="/verifica">Verifica tessera</a></li>
     </ul>
-    <div class="wrap"><a class="btn" href="/tesseramento">Tessera associativa · 5&nbsp;€</a></div>
+    {social.length > 0 && (
+      <ul class="wrap menu__social">
+        {social.map((x) => <li><a class="link" href={x.url!} target="_blank" rel="noopener me">{x.nome} ↗</a></li>)}
+      </ul>
+    )}
   </div>
 </header>
 
-<a class="btn actionbar" href="/tesseramento">Tessera associativa · 5&nbsp;€</a>
 
 <script>
   const btn = document.querySelector<HTMLButtonElement>('.mast__menu');
@@ -54,18 +72,6 @@ const links = [
     btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
     menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) set(false); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { set(false); btn.focus(); } });
-  }
-
-  // The mobile action bar steps aside while a signup form or the footer is on screen.
-  const bar = document.querySelector<HTMLElement>('.actionbar');
-  const targets = document.querySelectorAll('[data-hides-actionbar]');
-  if (bar && targets.length && 'IntersectionObserver' in window) {
-    const visible = new Set<Element>();
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => (e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)));
-      bar.classList.toggle('is-away', visible.size > 0);
-    }, { threshold: 0.35 });
-    targets.forEach((t) => io.observe(t));
   }
 </script>
 
@@ -113,7 +119,16 @@ const links = [
     transition: background-size 320ms var(--ease-out);
   }
   .mast__link:hover, .mast__link[aria-current] { background-size: 100% 3px; }
-  .mast__cta { min-height: 46px; padding-block: 0.6em; }
+  .mast__social { display: flex; gap: 4px; margin-right: -10px; }
+  .mast__social a {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    color: var(--blue);
+    transition: color 160ms;
+  }
+  .mast__social a:hover, .mast__social a:focus-visible { color: var(--pink); }
 
   .mast__menu {
     display: none;
@@ -148,27 +163,16 @@ const links = [
     letter-spacing: -0.03em;
     text-decoration: none;
   }
-  .menu .btn { width: 100%; }
-
-  .actionbar { display: none; }
+  .menu .menu__social { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+  .menu .menu__social a { display: inline; padding-block: 0 2px; border-bottom: 0; font-stretch: 100%; font-weight: 700; font-size: var(--step-1); letter-spacing: 0; }
 
   @media (max-width: 1080px) {
     .mast__nav { display: none; }
+    .mast__menu { display: inline-flex; }
+    .mast__social { margin-right: 0; }
   }
   @media (max-width: 760px) {
-    .mast__cta, .mark__sub { display: none; }
-    .mast__menu { display: inline-flex; }
-    .mast__row { min-height: var(--mast-row); }
-    .actionbar {
-      display: flex;
-      position: fixed;
-      z-index: 40;
-      left: 16px;
-      right: 22px;
-      bottom: calc(16px + env(safe-area-inset-bottom));
-    }
-    .actionbar { transition: transform 360ms var(--ease-out), opacity 200ms; }
-    .actionbar.is-away { transform: translateY(140%); opacity: 0; pointer-events: none; }
-    :global(html.menu-open) .actionbar { display: none; }
+    .mark__sub { display: none; }
+    .mast__row { gap: 8px; }
   }
 </style>

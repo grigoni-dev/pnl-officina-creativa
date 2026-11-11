@@ -182,7 +182,7 @@ A 12-column grid (`repeat(12, minmax(0, 1fr))`) inside a 1440px container with a
 
 Compositions are asymmetric and overlap like paste-up: the hero sets the display title across columns 1 to 8 and a tall print in 9 to 12, with the tessera card overlapping the print's lower-left corner. Lists read as a zine contents page: rows divided by plate rules, title left and text right. The archive is a fixed-scale series of 4:5 plates, five across.
 
-Breakpoints at 1080px and 760px. At 1080px the nav collapses, the grid stacks and the archive becomes a horizontal scroll-snap strip (40% per plate, 72% under 760px). Under 760px everything is one column, buttons go full width, and a fixed bottom "Diventa socio" action bar appears. It steps aside while a signup form or the footer is on screen. The masthead is sticky (76px plus the 3px rule, as `--mast-row` and `--mast-h`: anything that needs to clear it uses `--mast-h`).
+Breakpoints at 1080px and 760px. At 1080px the nav collapses, the grid stacks and the archive becomes a horizontal scroll-snap strip (40% per plate, 72% under 760px). At 1080px the menu button (☰) replaces the nav. Under 760px everything is one column and buttons go full width. The masthead carries no call to action: the mark, the nav (or ☰) and the Instagram and Facebook glyphs in blue, pink on hover; the open menu lists them by name. The masthead is sticky (76px plus the 3px rule, as `--mast-row` and `--mast-h`: anything that needs to clear it uses `--mast-h`).
 
 ## Elevation & Depth
 

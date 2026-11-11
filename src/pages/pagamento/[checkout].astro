@@ -50,7 +50,7 @@ const scaduto = c.status === 'EXPIRED';
         <p class="body pg__note">Il pagamento passa da SumUp, in modo sicuro: noi non vediamo mai i dati della carta. Hai 30 minuti per completarlo.</p>
       </header>
 
-      <div class="pg__box" data-hides-actionbar>
+      <div class="pg__box">
         {scaduto ? (
           <div class="pg__msg">
             <p class="lede">Sono passati più di 30 minuti e il pagamento non è più valido. Non ti è stato addebitato nulla.</p>

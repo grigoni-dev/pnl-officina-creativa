@@ -12,7 +12,7 @@ const usate = Object.values(crediti).filter((c) => !('inUso' in c) || c.inUso !=
 const fotografi = [...new Set(usate.filter((c) => !c.standIn).map((c) => c.artist))];
 const stock = usate.filter((c) => c.standIn).map((c) => `${c.artist} (${c.license})`);
 ---
-<footer class="foot" data-hides-actionbar>
+<footer class="foot">
   <div class="wrap foot__grid">
     <p class="foot__mark display" aria-hidden="true">PNL</p>
     <div class="foot__col">

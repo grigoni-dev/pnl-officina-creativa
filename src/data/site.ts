@@ -9,8 +9,8 @@ import credits from './photo-credits.json';
 export const contatti = {
   email: 'pnl.officinacreativa@gmail.com',
   emailProvvisoria: false,
-  instagram: null as string | null,
-  facebook: null as string | null,
+  instagram: 'https://www.instagram.com/pnl.officinacreativa' as string | null,
+  facebook: 'https://www.facebook.com/pnl.officinacreativa' as string | null,
   tiktok: null as string | null,
 };
 
