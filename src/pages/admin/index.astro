@@ -8,7 +8,7 @@ import Base from '../../layouts/Base.astro';
       <nav class="adm-tabs" aria-label="Sezioni" hidden>
         <a href="#eventi" data-tab="eventi">Eventi</a>
         <a href="#album" data-tab="album">Album</a>
-        <a href="#soci" data-tab="soci">Soci</a>
+        <a href="#soci" data-tab="soci">Soci <span class="adm-n-richieste" hidden></span></a>
         <a href="#comunicazioni" data-tab="comunicazioni">Comunicazioni</a>
         <a href="/admin/ingresso">Ingresso ↗</a>
       </nav>
@@ -63,12 +63,17 @@ import Base from '../../layouts/Base.astro';
             <label for="e-ingresso">Ingresso</label>
             <select id="e-ingresso" name="ingresso"><option value="pagamento">A pagamento</option><option value="libero">Libero</option></select>
           </div>
+          <div class="field">
+            <label for="e-vendita">Biglietti</label>
+            <select id="e-vendita" name="vendita"><option value="diretta">Sul nostro sito</option><option value="esterna">Su un sito esterno</option></select>
+          </div>
+          <div class="field field--wide" data-esterna><label for="e-burl">Link ai biglietti</label><input id="e-burl" name="biglietti_url" type="url" inputmode="url" maxlength="500" placeholder="https://…" /><p class="field__hint">Il bottone dell’evento apre questo link in una nuova scheda. Posti e chiusura vendite li gestisce quel sito.</p></div>
           <div class="field" data-se="pagamento"><label for="e-prezzo">Prezzo (€)</label><input id="e-prezzo" name="prezzo" type="number" min="0.5" step="0.5" inputmode="decimal" /></div>
-          <div class="field" data-se="pagamento"><label for="e-prev">Diritto di prevendita (€, facoltativo)</label><input id="e-prev" name="prevendita" type="number" min="0" step="0.1" inputmode="decimal" /><p class="field__hint">Per biglietto, solo online. Vuoto = nessuno</p></div>
-          <label class="check" data-se="libero"><input type="checkbox" name="prenotazione" /> <span>Serve la prenotazione (gratuita, con QR)</span></label>
-          <div class="field"><label for="e-posti">Posti (vuoto = senza limite)</label><input id="e-posti" name="posti" type="number" min="1" step="1" /></div>
-          <div class="field"><label for="e-max">Massimo biglietti per ordine</label><input id="e-max" name="max_per_ordine" type="number" min="1" max="20" value="6" required /></div>
-          <div class="field"><label for="e-vendite">Vendita aperta fino a</label><input id="e-vendite" name="vendite_fino_a" type="datetime-local" /><p class="field__hint">Vuoto = fino all’inizio dell’evento</p></div>
+          <div class="field" data-se="pagamento" data-diretta><label for="e-prev">Diritto di prevendita (€, facoltativo)</label><input id="e-prev" name="prevendita" type="number" min="0" step="0.1" inputmode="decimal" /><p class="field__hint">Per biglietto, solo online. Vuoto = nessuno</p></div>
+          <label class="check" data-se="libero" data-diretta><input type="checkbox" name="prenotazione" /> <span>Serve la prenotazione (gratuita, con QR)</span></label>
+          <div class="field" data-diretta><label for="e-posti">Posti (vuoto = senza limite)</label><input id="e-posti" name="posti" type="number" min="1" step="1" /></div>
+          <div class="field" data-diretta><label for="e-max">Massimo biglietti per ordine</label><input id="e-max" name="max_per_ordine" type="number" min="1" max="20" value="6" required /></div>
+          <div class="field" data-diretta><label for="e-vendite">Vendita aperta fino a</label><input id="e-vendite" name="vendite_fino_a" type="datetime-local" /><p class="field__hint">Vuoto = fino all’inizio dell’evento</p></div>
           <div class="field">
             <label for="e-album">Album delle foto (dopo l’evento)</label>
             <select id="e-album" name="album_id"><option value="">Nessuno</option></select>
@@ -220,13 +225,24 @@ import Base from '../../layouts/Base.astro';
         <div class="adm-import__esito body"></div>
       </div>
 
+      <div class="adm-card adm-richieste" hidden>
+        <h2 class="display h3">Richieste da approvare</h2>
+        <p class="body">Chi ha chiesto di diventare socio dal sito. <strong>Approva</strong> quando la richiesta è accolta e la quota è pagata: diventa socio attivo con il numero successivo e riceve l’email di benvenuto. <strong>Rifiuta</strong> cancella la richiesta e i suoi dati.</p>
+        <div class="adm-tab-wrap">
+          <table class="adm-tab">
+            <thead><tr><th>Richiesta del</th><th>Nome</th><th>Nato il</th><th>Email</th><th>Telefono</th><th></th></tr></thead>
+            <tbody class="adm-richieste__righe"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="adm-filtri">
         <div class="field"><label for="s-cerca">Cerca</label><input id="s-cerca" type="search" placeholder="Nome, email, telefono, numero" /></div>
         <div class="field">
           <label for="s-stato">Stato</label>
           <select id="s-stato">
             <option value="attivo">Attivi</option>
-            <option value="in_attesa">In attesa di pagamento</option>
+            <option value="in_attesa">Richieste da approvare</option>
             <option value="receduto">Receduti</option>
             <option value="">Tutti</option>
           </select>
@@ -263,6 +279,7 @@ import Base from '../../layouts/Base.astro';
     $('.adm-esci').hidden = !r;
     if (!r) return mostra('login');
     if (r === 'ingresso') return location.replace('/admin/ingresso');
+    contaRichieste();
     route();
   };
   const route = () => {
@@ -290,13 +307,13 @@ import Base from '../../layouts/Base.astro';
 
   const elencoEventi = async () => {
     mostra('eventi');
-    const { data, error } = await sb.from('eventi').select('id, titolo, data, ora_inizio, stato, posti, accesso, ingresso, prezzo_cent').order('data', { ascending: false });
+    const { data, error } = await sb.from('eventi').select('id, titolo, data, ora_inizio, stato, posti, accesso, ingresso, prezzo_cent, biglietti_url').order('data', { ascending: false });
     if (fallito(error, 'Eventi')) return;
     const oggi = new Date().toISOString().slice(0, 10);
     $('.adm-eventi').innerHTML = (data ?? []).map((e) => `
       <li><a href="#eventi/${e.id}" class="adm-riga">
         <strong>${esc(e.titolo)}</strong>
-        <span class="label">${giorno(e.data)} · ${e.ora_inizio.slice(0, 5)} · ${e.ingresso === 'libero' ? 'libero' : euro(e.prezzo_cent)} · ${e.accesso === 'soci' ? 'solo soci' : 'pubblico'}${e.data < oggi ? ' · passato' : ''}</span>
+        <span class="label">${giorno(e.data)} · ${e.ora_inizio.slice(0, 5)} · ${e.ingresso === 'libero' ? 'libero' : euro(e.prezzo_cent)} · ${e.accesso === 'soci' ? 'solo soci' : 'pubblico'}${e.biglietti_url ? ' · biglietti esterni' : ''}${e.data < oggi ? ' · passato' : ''}</span>
         <span class="adm-badge ${e.stato === 'pubblicato' ? 'is-on' : e.stato === 'annullato' ? 'is-ko' : ''}">${{ bozza: 'Bozza', pubblicato: 'Pubblicato', annullato: 'Annullato' }[e.stato as string]}</span>
       </a></li>`).join('') || '<li class="body">Nessun evento ancora.</li>';
   };
@@ -304,7 +321,12 @@ import Base from '../../layouts/Base.astro';
   const formEvento = $<HTMLFormElement>('.adm-evento');
   const aggiornaIngresso = () => {
     const ing = val(formEvento, 'ingresso').value;
-    formEvento.querySelectorAll<HTMLElement>('[data-se]').forEach((el) => (el.hidden = el.dataset.se !== ing));
+    const esterna = val(formEvento, 'vendita').value === 'esterna';
+    formEvento.querySelectorAll<HTMLElement>('[data-se], [data-diretta], [data-esterna]').forEach((el) => {
+      el.hidden = (el.dataset.se !== undefined && el.dataset.se !== ing)
+        || (el.dataset.diretta !== undefined && esterna)
+        || (el.dataset.esterna !== undefined && !esterna);
+    });
   };
   formEvento.addEventListener('change', aggiornaIngresso);
 
@@ -345,6 +367,8 @@ import Base from '../../layouts/Base.astro';
     val(formEvento, 'prezzo').value = data.prezzo_cent ? String(data.prezzo_cent / 100) : '';
     val(formEvento, 'prevendita').value = data.prevendita_cent ? String(data.prevendita_cent / 100) : '';
     val(formEvento, 'prenotazione').checked = data.prenotazione;
+    val(formEvento, 'vendita').value = data.biglietti_url ? 'esterna' : 'diretta';
+    val(formEvento, 'biglietti_url').value = data.biglietti_url ?? '';
     val(formEvento, 'vendite_fino_a').value = locale(data.vendite_fino_a);
     await caricaAlbumSelect(data.album_id);
     aggiornaIngresso();
@@ -364,6 +388,8 @@ import Base from '../../layouts/Base.astro';
     const f = new FormData(formEvento);
     const s = (k: string) => String(f.get(k) ?? '').trim();
     const ingresso = s('ingresso');
+    const bigliettiUrl = s('vendita') === 'esterna' ? s('biglietti_url') : '';
+    if (s('vendita') === 'esterna' && !/^https?:\/\/\S+$/.test(bigliettiUrl)) return msg('Per i biglietti su un sito esterno serve il link completo, che comincia con https://', true);
     const riga: Record<string, unknown> = {
       titolo: s('titolo'), data: s('data'), ora_inizio: s('ora_inizio'), ora_fine: s('ora_fine'),
       luogo_nome: s('luogo_nome'), luogo_indirizzo: s('luogo_indirizzo') || null, descrizione: s('descrizione') || null,
@@ -375,6 +401,7 @@ import Base from '../../layouts/Base.astro';
       max_per_ordine: Number(s('max_per_ordine')) || 6,
       vendite_fino_a: s('vendite_fino_a') ? new Date(s('vendite_fino_a')).toISOString() : null,
       album_id: s('album_id') || null,
+      biglietti_url: bigliettiUrl || null,
       stato: evento?.stato === 'annullato' ? 'annullato' : stato,
     };
     if (ingresso === 'pagamento' && !riga.prezzo_cent) return msg('Per un evento a pagamento serve il prezzo (minimo 0,50 €).', true);
@@ -707,15 +734,76 @@ import Base from '../../layouts/Base.astro';
 
   /* ================= SOCI ================= */
   let soci: Record<string, any>[] = [];
-  const STATI: Record<string, string> = { attivo: 'Attivo', in_attesa: 'In attesa', receduto: 'Receduto' };
+  const STATI: Record<string, string> = { attivo: 'Attivo', in_attesa: 'Richiesta', receduto: 'Receduto' };
+
+  // The number of requests waiting, next to the "Soci" tab.
+  const mostraRichieste = (n: number) => {
+    const b = $('.adm-n-richieste');
+    b.hidden = !n;
+    b.textContent = n ? `(${n})` : '';
+  };
+  const contaRichieste = async () => {
+    const { count } = await sb.from('soci').select('id', { count: 'exact', head: true }).eq('stato', 'in_attesa');
+    mostraRichieste(count ?? 0);
+  };
+
+  // "gia_presente:12:Mario Rossi" (from the database) → readable text
+  const giaPresente = (m: string) => {
+    const x = m.match(/gia_presente:(\d*):(.*)/);
+    return x ? `C’è già un socio con questa email o questo telefono: ${x[2].trim()}${x[1] ? `, tessera N° ${x[1]}` : ''}.` : null;
+  };
 
   const caricaSoci = async () => {
     mostra('soci');
     const { data, error } = await sb.from('soci').select('*').order('numero', { ascending: true, nullsFirst: false }).order('created_at');
     if (fallito(error, 'Soci')) return;
     soci = data ?? [];
+    disegnaRichieste();
     disegnaSoci();
   };
+
+  const disegnaRichieste = () => {
+    const richieste = soci.filter((s) => s.stato === 'in_attesa').sort((a, b) => a.created_at.localeCompare(b.created_at));
+    mostraRichieste(richieste.length);
+    $('.adm-richieste').hidden = !richieste.length;
+    $('.adm-richieste__righe').innerHTML = richieste.map((s) => `
+      <tr>
+        <td>${giorno(s.created_at)}</td>
+        <td>${esc(s.nome)} ${esc(s.cognome)}</td>
+        <td>${s.data_nascita ? giorno(s.data_nascita) : '—'}</td>
+        <td>${esc(s.email ?? '—')}</td>
+        <td>${esc(s.telefono ?? '—')}</td>
+        <td class="adm-richieste__azioni"><button type="button" class="btn" data-approva="${s.id}">Approva</button> <button type="button" class="link" data-rifiuta="${s.id}">Rifiuta</button></td>
+      </tr>`).join('');
+  };
+
+  $('.adm-richieste').addEventListener('click', async (e) => {
+    const el = e.target as HTMLElement;
+    const id = el.dataset.approva ?? el.dataset.rifiuta;
+    const s = soci.find((x) => x.id === id);
+    if (!s) return;
+    if (el.dataset.rifiuta) {
+      if (!confirm(`Rifiutare la richiesta di ${s.nome} ${s.cognome}? La richiesta e i suoi dati vengono cancellati.`)) return;
+      const { error } = await sb.rpc('rifiuta_richiesta', { p_socio: s.id });
+      if (fallito(error, 'Rifiuto')) return;
+      msg(`Richiesta di ${s.nome} ${s.cognome} rifiutata e cancellata.`);
+      return caricaSoci();
+    }
+    if (!confirm(`Approvare la richiesta di ${s.nome} ${s.cognome}?\n\nDiventa socio attivo con il numero successivo e la quota risulta pagata. ${s.email ? 'Gli mandiamo l’email di benvenuto con la tessera.' : ''}`)) return;
+    (el as HTMLButtonElement).disabled = true;
+    const { data, error } = await sb.rpc('approva_richiesta', { p_socio: s.id });
+    if (error) {
+      (el as HTMLButtonElement).disabled = false;
+      return msg(giaPresente(error.message) ?? `Non approvata: ${error.message}`, true);
+    }
+    let nota = '';
+    if (data.email) {
+      try { await api('/api/admin/benvenuto', { socio_id: data.id }); nota = ' Email di benvenuto inviata.'; }
+      catch (err) { nota = ` L’email di benvenuto non è partita: ${(err as Error).message}`; }
+    }
+    msg(`${data.nome} ${data.cognome} è socio: tessera N° ${data.numero}.${nota}`, nota.includes('non è partita'));
+    caricaSoci();
+  });
 
   const disegnaSoci = () => {
     const q = $<HTMLInputElement>('#s-cerca').value.trim().toLowerCase();
@@ -755,9 +843,11 @@ import Base from '../../layouts/Base.astro';
     scaricaCsv(`libro-soci-${new Date().toISOString().slice(0, 10)}.csv`, col, soci.filter((s) => s.stato !== 'in_attesa'));
   });
 
-  /* ---- import (LOGICHE.md §1): columns Data/Ora, Email, Nome, Cognome, Telefono ---- */
-  type RigaImport = { riga: number; nome: string; cognome: string; email: string; telefono: string; iscritto_at: string | null };
+  /* ---- import (LOGICHE.md §1): columns Data/Ora, Email, Nome, Cognome, Telefono,
+     or the panel's own CSV (iscritto_at, data_nascita, stato…). Card numbers are always reassigned. ---- */
+  type RigaImport = { riga: number; nome: string; cognome: string; email: string; telefono: string; iscritto_at: string | null; data_nascita: string | null };
   let daImportare: RigaImport[] = [];
+  let esclusi: string[] = [];
 
   const leggiCsv = (testo: string): string[][] => {
     const sep = (testo.split('\n')[0].match(/;/g)?.length ?? 0) >= (testo.split('\n')[0].match(/,/g)?.length ?? 0) ? ';' : ',';
@@ -811,23 +901,34 @@ import Base from '../../layouts/Base.astro';
     }
     const intestazioni = (tabella[0] ?? []).map(chiave);
     const col = (...nomi: string[]) => intestazioni.findIndex((h) => nomi.includes(h));
-    const c = { data: col('dataora', 'data', 'dataiscrizione', 'timestamp', 'informazionicronologiche'), email: col('email', 'mail', 'indirizzoemail'), nome: col('nome'), cognome: col('cognome'), telefono: col('telefono', 'cellulare', 'tel') };
+    const c = { data: col('dataora', 'data', 'dataiscrizione', 'iscrittoat', 'iscrittoil', 'timestamp', 'informazionicronologiche'), nascita: col('datanascita', 'datadinascita', 'natoil'), stato: col('stato'), email: col('email', 'mail', 'indirizzoemail'), nome: col('nome'), cognome: col('cognome'), telefono: col('telefono', 'cellulare', 'tel') };
     if (c.nome < 0 || c.cognome < 0 || (c.email < 0 && c.telefono < 0)) {
       return msg(`Nel file non trovo le colonne Nome, Cognome ed Email o Telefono. Ho trovato: ${(tabella[0] ?? []).join(', ')}`, true);
     }
     const cella = (r: unknown[], i: number) => (i < 0 ? '' : String(r[i] ?? '').trim());
-    daImportare = tabella.slice(1).map((r, i) => ({
-      riga: i + 2,
-      nome: cella(r, c.nome), cognome: cella(r, c.cognome), email: cella(r, c.email), telefono: cella(r, c.telefono),
-      iscritto_at: c.data < 0 ? null : leggiData(r[c.data]),
-    }));
+    // Members who left, or requests never approved, in an exported file: not imported as active.
+    const fuori: string[] = [];
+    daImportare = [];
+    tabella.slice(1).forEach((r, i) => {
+      const stato = cella(r, c.stato).toLowerCase();
+      if (stato && stato !== 'attivo') { fuori.push(`riga ${i + 2} (${cella(r, c.nome)} ${cella(r, c.cognome)}): nel file risulta “${stato}”`); return; }
+      const nascita = c.nascita < 0 ? null : leggiData(r[c.nascita]);
+      daImportare.push({
+        riga: i + 2,
+        nome: cella(r, c.nome), cognome: cella(r, c.cognome), email: cella(r, c.email), telefono: cella(r, c.telefono),
+        iscritto_at: c.data < 0 ? null : leggiData(r[c.data]),
+        // as a calendar day: leggiData gives local noon, so the date never slips
+        data_nascita: nascita ? new Date(nascita).toLocaleDateString('sv-SE') : null,
+      });
+    });
+    esclusi = fuori;
     // older first, so card numbers follow the joining date
     daImportare.sort((a, b) => (a.iscritto_at ?? '9999').localeCompare(b.iscritto_at ?? '9999'));
     const box = $('.adm-import');
     box.hidden = false;
     $('.adm-import__esito').innerHTML = '';
     $<HTMLButtonElement>('.adm-import__ok').hidden = false;
-    $('.adm-import__info').textContent = `${daImportare.length} righe in “${file.name}”. Verranno importate come soci attivi, numerate in ordine di iscrizione. Chi ha un’email o un telefono già presenti viene saltato. Ecco le prime:`;
+    $('.adm-import__info').textContent = `${daImportare.length} righe in “${file.name}”${fuori.length ? ` (più ${fuori.length} non attive, che non importo)` : ''}. Verranno importate come soci attivi, con i numeri di tessera successivi in ordine di iscrizione. Chi ha un’email o un telefono già presenti viene saltato e lo trovi nel riepilogo. Ecco le prime:`;
     $<HTMLButtonElement>('.adm-import__ok').textContent = `Importa ${daImportare.length} soci`;
     $('.adm-import__anteprima').innerHTML = `<thead><tr><th>Riga</th><th>Iscritto il</th><th>Nome</th><th>Email</th><th>Telefono</th></tr></thead><tbody>${daImportare.slice(0, 6).map((r) => `<tr><td>${r.riga}</td><td>${r.iscritto_at ? giorno(r.iscritto_at) : '<em>data non letta</em>'}</td><td>${esc(r.nome)} ${esc(r.cognome)}</td><td>${esc(r.email)}</td><td>${esc(r.telefono)}</td></tr>`).join('')}</tbody>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -845,8 +946,12 @@ import Base from '../../layouts/Base.astro';
       const { data, error } = await sb.rpc('importa_soci', { p_righe: blocco.map(({ riga, ...r }) => r) });
       if (fallito(error, 'Import')) { bottone.disabled = false; return; }
       importati += data.importati;
-      for (const s of data.saltati) saltati.push(`riga ${blocco[s.riga - 1].riga}: ${s.motivo}`);
+      for (const s of data.saltati) {
+        const r = blocco[s.riga - 1];
+        saltati.push(`riga ${r.riga} (${r.nome} ${r.cognome}): ${s.motivo}`);
+      }
     }
+    saltati.push(...esclusi);
     bottone.disabled = false;
     bottone.hidden = true;
     $('.adm-import__esito').innerHTML = `<p><strong>Importati ${importati} soci.</strong>${saltati.length ? ` Saltate ${saltati.length} righe:` : ''}</p>${saltati.length ? `<ul class="adm-saltati">${saltati.map((s) => `<li>${esc(s)}</li>`).join('')}</ul>` : ''}`;
@@ -866,7 +971,7 @@ import Base from '../../layouts/Base.astro';
       p_email: v('email') || null, p_telefono: v('telefono') || null, p_note: v('note') || null,
     });
     if (error) {
-      return msg(/gia_presente/.test(error.message) ? 'C’è già un socio con questa email o questo telefono.' : `Non aggiunto: ${error.message}`, true);
+      return msg(giaPresente(error.message) ?? `Non aggiunto: ${error.message}`, true);
     }
     let nota = '';
     if (f.get('benvenuto') === 'on' && data.email) {

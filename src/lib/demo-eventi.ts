@@ -12,7 +12,7 @@ export function eventiDemo(modo: string | null): Evento[] {
   const base = {
     descrizione: 'Una serata nostra, come piace a noi.\n\nDJ set dalle 22, bar aperto tutta la sera, e la solita gente che conosci.',
     luogoIndirizzo: 'Via dell’Esempio 12, 31046 Oderzo TV',
-    maxPerOrdine: 6, stato: 'pubblicato' as const, albumSlug: null, prenotazione: false,
+    maxPerOrdine: 6, stato: 'pubblicato' as const, albumSlug: null, prenotazione: false, bigliettiUrl: null as string | null,
   };
   const lista: Evento[] = [
     { ...base, id: 'demo-1', slug: 'demo-festa', titolo: 'Festa d’inverno (demo)', locandina: { src: folla.src, width: folla.width, height: folla.height, alt: 'Locandina' },

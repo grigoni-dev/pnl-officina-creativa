@@ -26,12 +26,14 @@ export type Evento = {
   stato: 'pubblicato' | 'annullato';
   albumSlug: string | null;
   postiRimasti: number | null;
+  /** tickets sold on another site: the button links there instead of to our form */
+  bigliettiUrl: string | null;
 };
 
 const COLONNE =
   'id, slug, titolo, descrizione, locandina_path, locandina_width, locandina_height, inizio, fine, ' +
   'luogo_nome, luogo_indirizzo, accesso, ingresso, prezzo_cent, prevendita_cent, prenotazione, posti, max_per_ordine, ' +
-  'vendite_fino_a, stato, album:album(slug, pubblicato)';
+  'vendite_fino_a, stato, biglietti_url, album:album(slug, pubblicato)';
 
 type Riga = Record<string, any>;
 
@@ -40,7 +42,7 @@ const urlLocandina = (path: string) => `${PUBLIC_SUPABASE_URL}/storage/v1/object
 async function toEvento(r: Riga): Promise<Evento> {
   const inizio = new Date(r.inizio);
   let postiRimasti: number | null = null;
-  if (r.posti) {
+  if (r.posti && !r.biglietti_url) {
     const { data } = await supabasePubblico()!.rpc('posti_occupati', { p_evento: r.id });
     postiRimasti = Math.max(0, r.posti - (Number(data) || 0));
   }
@@ -67,6 +69,7 @@ async function toEvento(r: Riga): Promise<Evento> {
     stato: r.stato,
     albumSlug: r.album?.pubblicato ? r.album.slug : null,
     postiRimasti,
+    bigliettiUrl: r.biglietti_url ?? null,
   };
 }
 
@@ -122,6 +125,8 @@ export type Vendita = 'aperta' | 'esaurito' | 'chiusa' | 'annullato' | 'solo-inf
 export function statoVendita(e: Evento, ora = new Date()): Vendita {
   if (e.stato === 'annullato') return 'annullato';
   if (ora >= e.fine) return 'concluso';
+  // On an external site, seats and closing time are that site's business.
+  if (e.bigliettiUrl) return 'aperta';
   if (e.ingresso === 'libero' && !e.prenotazione) return 'solo-info';
   if (ora >= e.venditeFinoA) return 'chiusa';
   if (e.postiRimasti === 0) return 'esaurito';
@@ -130,6 +135,15 @@ export function statoVendita(e: Evento, ora = new Date()): Vendita {
 
 export const etichettaBottone = (e: Evento) =>
   e.ingresso === 'pagamento' ? `Compra il biglietto · ${euro(e.prezzoCent!)}` : 'Prenota';
+
+/** Where the button goes: our form, or the external ticket site. */
+export const linkBiglietti = (e: Evento) => e.bigliettiUrl ?? `/eventi/${e.slug}/biglietti`;
+
+/** "evients.com" from the external link, for the note under the button. */
+export const sitoBiglietti = (e: Evento) => {
+  if (!e.bigliettiUrl) return null;
+  try { return new URL(e.bigliettiUrl).hostname.replace(/^www\./, ''); } catch { return null; }
+};
 
 /* ---------------------------------------------------------------------------
  * Formatting, always in Italian time

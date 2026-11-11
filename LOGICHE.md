@@ -4,7 +4,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 
 ## 1. Soci
 
-**Chi è socio.** Un socio ha uno stato: *in attesa* (ha compilato ma non ha pagato), *attivo* o *receduto*. La tessera vale finché non chiede il recesso.
+**Chi è socio.** Un socio ha uno stato: *richiesta* (ha chiesto di aderire, aspetta l'approvazione), *attivo* o *receduto*. La tessera vale finché non chiede il recesso.
 
 **Come lo riconosciamo.** Dall'**email** o dal **telefono** usati all'iscrizione, non dal numero di tessera. Il numero di tessera esiste comunque (serve per il libro soci) e viene scritto nell'email di benvenuto.
 - Il telefono diventa **obbligatorio** all'iscrizione.
@@ -15,9 +15,20 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 **Soci che esistono già.** Dal pannello admin si carica la vostra lista in CSV. Ogni persona diventa socio *attivo* e riceve un numero di tessera progressivo. Di default non le mandiamo nessuna email.
 - La lista ha le colonne **Data/Ora, Email, Nome, Cognome, Telefono**. Si carica il file Excel (.xlsx) o un CSV esportato da Excel. *Data/Ora* diventa la data d'iscrizione.
 - Alla lista manca la data di nascita: chi viene importato è segnato **"manca la data di nascita"**, così si sa a chi chiederla.
-- Se una riga ha la stessa email o lo stesso telefono di un socio già presente, viene saltata e segnalata.
+- Si può caricare anche il CSV che il pannello esporta ("Scarica libro soci"): legge anche la data di nascita e la data d'iscrizione; le righe con stato diverso da *attivo* (receduti) non vengono importate. I numeri di tessera si riassegnano sempre, in ordine di iscrizione.
+- Se una riga ha la stessa email o lo stesso telefono di un socio già presente (attivo o receduto), viene saltata. A fine import il riepilogo elenca ogni riga saltata con il nome e il socio con cui coincide.
+- Se una persona importata aveva una richiesta in attesa, la richiesta si chiude da sola.
 
-**Iscrizione online.** Si chiedono solo **nome, cognome, data di nascita, email e telefono** (online solo maggiorenni), si pagano 5 € con SumUp e arriva l'email con la tessera.
+**Richiesta di adesione** (11 novembre). Lo statuto vuole che l'ammissione sia decisa dall'associazione, quindi online non ci si iscrive: si **chiede** di aderire.
+- `/tesseramento` chiede **nome, cognome, data di nascita, email e telefono** (online solo maggiorenni), lo statuto e il consenso privacy. Niente pagamento online.
+- Se l'email o il telefono sono già di un socio attivo, il sito risponde "risulti già socio" (come la verifica tessera). Se c'è già una richiesta con gli stessi contatti, risponde che la state valutando.
+- Chi invia riceve un'email di conferma (se Resend è attivo) e vede la pagina "Richiesta inviata".
+- Nel pannello, Soci → **Richieste da approvare** (il numero compare anche accanto a "Soci"):
+  - **Approva**: diventa socio attivo con il numero successivo, la quota risulta pagata (si paga fuori dal sito, 5 €) e riceve l'email di benvenuto con la tessera;
+  - **Rifiuta**: la richiesta e i dati vengono cancellati.
+- Le richieste senza risposta si cancellano da sole dopo 180 giorni.
+
+**Aggiungi socio a mano.** Se email o telefono sono già di un socio, il pannello dice chi è (nome e numero di tessera).
 
 **Verifica tessera** (`/verifica`). Si inserisce email o telefono e il sito risponde solo *attiva* o *non trovata*. Non mostra mai nomi né altri dati. Il limite è di 20 richieste ogni 10 minuti per connessione.
 - Da sapere: chi conosce l'email o il telefono di qualcuno può scoprire se quella persona è socia. Per un'associazione culturale è un rischio basso, ma va detto anche nell'informativa.
@@ -51,6 +62,9 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 | Libero senza prenotazione | nessun bottone, solo i dettagli |
 | Posti finiti | "Esaurito" (disattivato) |
 | Vendita chiusa / evento passato | "Vendite chiuse" |
+| Biglietti su un sito esterno | Lo stesso bottone, che apre il link esterno in una nuova scheda |
+
+**Biglietti su un sito esterno.** Nel pannello, per ogni evento, *Biglietti*: **sul nostro sito** (il modulo qui sotto) oppure **su un sito esterno**, con il link. Con il sito esterno il bottone porta lì (anche il link nelle email ai soci), e posti, massimo per ordine e chiusura delle vendite li gestisce quel sito.
 
 **Pagina eventi.** `/eventi` mostra prima i **prossimi** (quelli non ancora finiti) e sotto i **passati**, dal più recente, in una griglia compatta con locandina, data, titolo e il link alle foto se c'è un album collegato. Gli eventi annullati non compaiono tra i passati.
 
@@ -61,9 +75,7 @@ Cosa fa il sito. Confermato il 6 novembre 2026.
 **Acquisto** (`/eventi/<nome>/biglietti`):
 1. Chi compra mette i suoi dati: nome, cognome, email e telefono.
 2. Sceglie quanti biglietti, fino al massimo per ordine. **Ogni biglietto è nominativo**: nome e cognome di chi entra.
-3. **Se l'evento è riservato ai soci**, per ogni biglietto serve anche l'email o il telefono di quella persona, e il sito controlla che sia socia attiva.
-   - **Se chi compra non è socio**, basta una spunta, "Mi iscrivo adesso": diventa socio con i dati che ha già scritto (nome, cognome, email, telefono) e paga **tessera + biglietto insieme**, con un solo pagamento. La data di nascita gli verrà chiesta dopo: nel pannello risulta "manca la data di nascita".
-   - Gli amici per cui compra devono già essere soci. Se uno non lo è, il sito lo dice e quel biglietto non si può comprare.
+3. **Se l'evento è riservato ai soci**, per ogni biglietto serve anche l'email o il telefono di quella persona, e il sito controlla che sia socia attiva. Se non lo è, il sito lo dice e rimanda alla richiesta di adesione: tessera e biglietti restano separati, il biglietto si compra dopo l'approvazione.
 4. Pagamento con SumUp, come per la tessera: il modulo carta compare in una pagina del sito (Apple Pay e Google Pay quando SumUp li attiva). Se l'evento ha un **diritto di prevendita**, si aggiunge a ogni biglietto ed è mostrato prima di pagare. Per le prenotazioni gratuite non c'è nessun pagamento: si conferma e basta.
 5. Arriva un'email con **un QR per ogni biglietto**. Ogni QR è anche una pagina `/biglietto/<codice>` che si può mostrare dal telefono.
 

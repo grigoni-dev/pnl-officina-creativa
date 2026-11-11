@@ -6,7 +6,7 @@ import Reg from '../../components/Reg.astro';
 import Campo from '../../components/Campo.astro';
 import { contatti, quota, statuto as urlStatuto } from '../../data/site';
 import { gruppiSocio } from '../../lib/campi-socio';
-import { CAMPI, GiaSocio, avviaIscrizione, leggiModulo, valida, type DatiSocio, type Errori } from '../../lib/soci';
+import { CAMPI, GiaSocio, RichiestaInCorso, inviaRichiesta, leggiModulo, valida, type DatiSocio, type Errori } from '../../lib/soci';
 import { entroIlLimite, impronta } from '../../lib/limiti';
 import { NonConfigurato } from '../../lib/supabase';
 import { indirizzoSito } from '../../lib/sito';
@@ -28,15 +28,18 @@ if (Astro.request.method === 'POST') {
       if (!(await entroIlLimite(`iscrizione:${chi}`, 8, 3600))) {
         errori.generale = 'Troppi tentativi da questa connessione. Riprova tra un’ora o scrivici.';
       } else {
-        return Astro.redirect(await avviaIscrizione(dati, indirizzoSito(Astro.url)), 303);
+        await inviaRichiesta(dati, indirizzoSito(Astro.url));
+        return Astro.redirect('/tesseramento/inviata', 303);
       }
     } catch (err) {
       if (err instanceof GiaSocio) {
-        errori.email = 'Con questa email o questo telefono risulti già socio: non serve iscriversi di nuovo. Puoi controllare su /verifica.';
+        errori.gia = 'Con questa email o questo telefono risulti già socio: non serve fare una nuova richiesta.';
+      } else if (err instanceof RichiestaInCorso) {
+        errori.gia = 'Abbiamo già una richiesta con questa email o questo telefono: la stiamo valutando e ti scriviamo noi.';
       } else {
         console.error('tesseramento', err);
         errori.generale = err instanceof NonConfigurato
-          ? 'Il tesseramento online non è ancora attivo. Scrivici e ti iscriviamo noi.'
+          ? 'Le richieste online non sono ancora attive. Scrivici e ti iscriviamo noi.'
           : 'Qualcosa è andato storto dal nostro lato. Riprova tra poco o scrivici.';
       }
     }
@@ -50,29 +53,26 @@ if (Astro.request.method === 'POST') {
   dati.cognome = pieno.slice(1).join(' ');
   dati.email = (q.get('email') ?? '').trim();
 }
-const annullato = Astro.url.searchParams.has('annullato');
-const nErrori = Object.keys(errori).filter((k) => k !== 'generale').length;
+const nErrori = Object.keys(errori).filter((k) => k !== 'generale' && k !== 'gia').length;
 
 const gruppi = gruppiSocio();
 ---
-<Base title={`Tessera associativa · PNL Officina Creativa`} description={`Iscriviti a PNL Officina Creativa: ${quota.importo} €, una volta sola. Paghi online con la carta e la tessera arriva per email.`}>
+<Base title={`Tessera associativa · PNL Officina Creativa`} description={`Chiedi di diventare socio di PNL Officina Creativa: ${quota.importo} €, una volta sola.`}>
   <Nav />
   <main id="contenuto" class="modulo">
     <div class="wrap modulo__grid">
       <header class="modulo__head">
-        <Reg as="h1" class="display h1" text="Tessera associativa" />
-        <p class="lede">{quota.importo}&nbsp;€, una volta sola. Compili, paghi, e la tessera ti arriva per email. Vale finché non chiedi il recesso.</p>
+        <Reg as="h1" class="display h2" text="Tessera associativa" />
+        <p class="lede">{quota.importo}&nbsp;€, una volta sola. Mandi la richiesta, noi la approviamo e la tessera ti arriva per email. Vale finché non chiedi il recesso.</p>
         <ol class="modulo__passi label">
-          <li class="is-qui">1 · I tuoi dati</li>
-          <li>2 · La quota</li>
+          <li class="is-qui">1 · La richiesta</li>
+          <li>2 · La approviamo</li>
           <li>3 · La tessera</li>
         </ol>
       </header>
 
       <form class="modulo__form" method="post" novalidate data-hides-actionbar>
-        {annullato && !Object.keys(errori).length && (
-          <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla. I tuoi dati sono qui sotto, puoi riprovare quando vuoi.</p>
-        )}
+        {errori.gia && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">{errori.gia} <a class="link" href="/verifica">Verifica la tessera</a></p>}
         {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
         {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}
 
@@ -104,8 +104,8 @@ const gruppi = gruppiSocio();
         <div class="paga">
           <p class="display paga__importo" aria-hidden="true">{quota.importo}&nbsp;€</p>
           <div class="paga__testo">
-            <button class="btn paga__btn" type="submit">Vai al pagamento</button>
-            <p class="paga__note">Nella pagina dopo paghi con SumUp, in modo sicuro, con la carta. Noi non vediamo mai i dati della carta.</p>
+            <button class="btn paga__btn" type="submit">Invia la richiesta</button>
+            <p class="paga__note">Non paghi niente adesso. Quando approviamo la richiesta ti scriviamo; la quota di {quota.importo}&nbsp;€ la paghi a noi, una volta sola.</p>
           </div>
         </div>
       </form>
@@ -117,7 +117,7 @@ const gruppi = gruppiSocio();
 <script>
   // After a failed submit, move focus to the summary so screen readers announce it.
   document.getElementById('riepilogo-errori')?.focus();
-  // Avoid double submits while the redirect to the payment page is on its way.
+  // Avoid double submits.
   const form = document.querySelector<HTMLFormElement>('.modulo__form');
   form?.addEventListener('submit', () => {
     const b = form.querySelector<HTMLButtonElement>('.paga__btn');

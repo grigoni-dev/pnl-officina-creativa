@@ -59,7 +59,7 @@ export function emailTessera(p: { nome: string; cognome: string; numero: number;
   const text = [
     `Ciao ${p.nome},`,
     '',
-    `la tua quota è arrivata: sei socio di PNL Officina Creativa.`,
+    `benvenuto: da oggi sei socio di PNL Officina Creativa.`,
     '',
     `Tessera N° ${n}`,
     `Intestata a: ${p.nome} ${p.cognome}`,
@@ -76,7 +76,7 @@ export function emailTessera(p: { nome: string; cognome: string; numero: number;
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffe14d"><tr><td align="center" style="padding:32px 16px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
 <tr><td style="font-size:28px;font-weight:900;letter-spacing:-1px;color:#3255a4;padding-bottom:24px">PNL <span style="font-size:12px;letter-spacing:1px;font-weight:700">OFFICINA CREATIVA</span></td></tr>
-<tr><td style="font-size:17px;line-height:1.5;padding-bottom:24px">Ciao ${esc(p.nome)},<br>la tua quota è arrivata: sei socio di PNL Officina Creativa.</td></tr>
+<tr><td style="font-size:17px;line-height:1.5;padding-bottom:24px">Ciao ${esc(p.nome)},<br>benvenuto: da oggi sei socio di PNL Officina Creativa.</td></tr>
 <tr><td style="border:3px solid #3255a4;background:#ffe14d;padding:20px 22px">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
   <tr><td style="font-size:12px;font-weight:700;letter-spacing:1px;border-bottom:3px solid #3255a4;padding-bottom:10px">TESSERA SOCIO N° ${n}</td>
@@ -90,6 +90,25 @@ export function emailTessera(p: { nome: string; cognome: string; numero: number;
 <tr><td style="font-size:13px;padding-top:32px;color:#3255a4">PNL Officina Creativa · Associazione culturale non profit</td></tr>
 </table></td></tr></table></body></html>`;
 
+  return { subject, html, text };
+}
+
+/** Receipt for a membership request: nothing is decided yet. */
+export function emailRichiesta(p: { nome: string; sito: string }) {
+  const subject = 'Abbiamo ricevuto la tua richiesta · PNL Officina Creativa';
+  const righe = [
+    'grazie: abbiamo ricevuto la tua richiesta di diventare socio di PNL Officina Creativa.',
+    'La valutiamo noi e ti scriviamo appena è approvata, con il numero della tua tessera. La quota la paghi a noi, non online.',
+  ];
+  const text = [`Ciao ${p.nome},`, '', ...righe, '', 'A presto,', 'PNL Officina Creativa'].join('\n');
+  const html = `<!doctype html><html lang="it"><body style="margin:0;background:#ffe14d;font-family:Arial,Helvetica,sans-serif;color:#3255a4">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffe14d"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px">
+<tr><td style="font-size:28px;font-weight:900;letter-spacing:-1px;color:#3255a4;padding-bottom:24px">PNL <span style="font-size:12px;letter-spacing:1px;font-weight:700">OFFICINA CREATIVA</span></td></tr>
+<tr><td style="font-size:17px;line-height:1.5">Ciao ${esc(p.nome)},</td></tr>
+${righe.map((r) => `<tr><td style="font-size:17px;line-height:1.5;padding-top:14px">${esc(r)}</td></tr>`).join('')}
+<tr><td style="font-size:13px;padding-top:32px;color:#3255a4">PNL Officina Creativa · Associazione culturale non profit · <a href="${p.sito}" style="color:#3255a4">${esc(p.sito.replace(/^https?:\/\//, ''))}</a></td></tr>
+</table></td></tr></table></body></html>`;
   return { subject, html, text };
 }
 

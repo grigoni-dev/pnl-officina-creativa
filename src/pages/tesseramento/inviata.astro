@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+import Reg from '../../components/Reg.astro';
+import { contatti, quota } from '../../data/site';
+---
+<Base title="Richiesta inviata · PNL Officina Creativa" description="La tua richiesta di adesione a PNL Officina Creativa è arrivata.">
+  <Nav />
+  <main id="contenuto" class="inviata">
+    <div class="wrap inviata__in">
+      <Reg as="h1" class="display h1" text="Richiesta inviata." />
+      <ol class="inviata__passi">
+        <li><span class="label">Fatto</span><p>La tua richiesta è arrivata. Ti abbiamo mandato una conferma per email.</p></li>
+        <li><span class="label">Adesso</span><p>La valutiamo noi. Quando è approvata ti scriviamo con il numero della tua tessera.</p></li>
+        <li><span class="label">La quota</span><p>{quota.importo}&nbsp;€, una volta sola: la paghi a noi, non online.</p></li>
+      </ol>
+      <p class="body">Domande? Scrivici a <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a>.</p>
+      <a class="btn" href="/">Torna alla home</a>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .inviata { min-height: 70svh; padding-block: clamp(48px, 8vw, 120px); }
+  .inviata__in { display: grid; gap: 32px; justify-items: start; }
+  .inviata__in :global(h1) { max-width: 16ch; }
+  .inviata__passi { display: grid; gap: 0; width: min(100%, 640px); }
+  .inviata__passi li { display: grid; grid-template-columns: 9rem 1fr; gap: 16px; padding-block: 14px; border-top: var(--rule) solid var(--blue); }
+  .inviata__passi li:last-child { border-bottom: var(--rule) solid var(--blue); }
+  .inviata__passi p { font-weight: 600; }
+  @media (max-width: 560px) { .inviata__passi li { grid-template-columns: 1fr; gap: 4px; } }
+</style>

@@ -14,7 +14,7 @@ import { supabaseServizio } from './supabase';
 export type Bozza = { oggetto: string; testo: string; eventoId: string | null };
 type EventoMail = {
   id: string; slug: string; titolo: string; inizio: string; fine: string; luogo_nome: string; luogo_indirizzo: string | null;
-  accesso: string; ingresso: string; prezzo_cent: number | null; prevendita_cent: number; prenotazione: boolean;
+  accesso: string; ingresso: string; prezzo_cent: number | null; prevendita_cent: number; prenotazione: boolean; biglietti_url: string | null;
   locandina_path: string | null; stato: string;
 };
 type Destinatario = { id: string; nome: string; email: string };
@@ -26,7 +26,7 @@ export async function caricaEvento(id: string | null): Promise<EventoMail | null
   if (!id) return null;
   const { data, error } = await supabaseServizio()
     .from('eventi')
-    .select('id, slug, titolo, inizio, fine, luogo_nome, luogo_indirizzo, accesso, ingresso, prezzo_cent, prevendita_cent, prenotazione, locandina_path, stato')
+    .select('id, slug, titolo, inizio, fine, luogo_nome, luogo_indirizzo, accesso, ingresso, prezzo_cent, prevendita_cent, prenotazione, biglietti_url, locandina_path, stato')
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -59,8 +59,9 @@ const paragrafi = (t: string) =>
 
 function bottone(e: EventoMail, socioId: string, sito: string) {
   const pagina = `${sito}/eventi/${e.slug}`;
-  const vendita = e.stato === 'pubblicato' && (e.ingresso === 'pagamento' || e.prenotazione);
+  const vendita = e.stato === 'pubblicato' && (e.ingresso === 'pagamento' || e.prenotazione || !!e.biglietti_url);
   if (!vendita) return { etichetta: 'Tutti i dettagli', url: pagina };
+  if (e.biglietti_url) return { etichetta: e.ingresso === 'pagamento' ? 'Prendi il biglietto' : 'Prenota il posto', url: e.biglietti_url };
   return {
     etichetta: e.ingresso === 'pagamento' ? 'Prendi il biglietto' : 'Prenota il posto',
     url: `${pagina}/biglietti${socioId === NESSUNO ? '' : `?s=${firma('biglietti', socioId)}`}`,

@@ -1,7 +1,7 @@
 ---
 import Reg from './Reg.astro';
 import {
-  type Evento, anno, euro, etichettaAccesso, etichettaBottone, etichettaIngresso, giornoEvento, mappa, orario, statoVendita,
+  type Evento, anno, euro, etichettaAccesso, etichettaBottone, etichettaIngresso, giornoEvento, linkBiglietti, mappa, orario, sitoBiglietti, statoVendita,
 } from '../lib/eventi';
 
 /**
@@ -18,6 +18,7 @@ const pagina = `/eventi/${e.slug}`;
 const giorno = e.inizio.toLocaleDateString('it-IT', { day: 'numeric', timeZone: 'Europe/Rome' });
 const mese = e.inizio.toLocaleDateString('it-IT', { month: 'short', timeZone: 'Europe/Rome' }).replace('.', '');
 const paragrafi = (e.descrizione ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
+const esterno = sitoBiglietti(e);
 const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti <= 20 && vendita === 'aperta';
 ---
 <article class:list={['ev', grande && 'ev--grande', dettaglio && 'ev--dettaglio', e.stato === 'annullato' && 'ev--annullato']}>
@@ -49,7 +50,7 @@ const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti 
     </dl>
 
     {e.accesso === 'soci' && vendita !== 'annullato' && vendita !== 'concluso' && (
-      <p class="ev__nota">Riservato ai soci. Non lo sei ancora? Puoi iscriverti e prendere il biglietto nello stesso pagamento.</p>
+      <p class="ev__nota">Riservato ai soci. Non lo sei ancora? <a class="link" href="/tesseramento">Richiedi la tessera</a>: quando la approviamo puoi prendere il biglietto.</p>
     )}
 
     {dettaglio && paragrafi.length > 0 && (
@@ -57,7 +58,10 @@ const rimasti = e.postiRimasti !== null && e.postiRimasti > 0 && e.postiRimasti 
     )}
 
     <div class="ev__azione" data-hides-actionbar>
-      {vendita === 'aperta' && <a class="btn" href={`${pagina}/biglietti`}>{etichettaBottone(e)}</a>}
+      {vendita === 'aperta' && (esterno
+        ? <a class="btn" href={linkBiglietti(e)} target="_blank" rel="noopener">{etichettaBottone(e)} ↗</a>
+        : <a class="btn" href={linkBiglietti(e)}>{etichettaBottone(e)}</a>)}
+      {vendita === 'aperta' && esterno && <p class="label ev__esterno">I biglietti si comprano su {esterno}</p>}
       {vendita === 'esaurito' && <span class="btn btn--spento" aria-disabled="true">Esaurito</span>}
       {vendita === 'chiusa' && <span class="btn btn--spento" aria-disabled="true">Vendite chiuse</span>}
       {vendita === 'annullato' && <p class="label">Evento annullato. Chi aveva il biglietto viene rimborsato.</p>}

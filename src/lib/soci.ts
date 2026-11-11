@@ -1,12 +1,9 @@
-import { quota } from '../data/site';
 import { emailValida, normEmail, normTel, socioDaContatto, telefonoValido } from './contatti';
-import { emailTessera, inviaEmail } from './email';
-import { creaCheckout } from './sumup';
+import { emailRichiesta, emailTessera, inviaEmail } from './email';
 import { supabaseServizio } from './supabase';
 
 /* ---------------------------------------------------------------------------
- * Libro soci: fields and validation (used by /tesseramento and, prefixed,
- * by the ticket form when someone joins and buys in one go)
+ * Libro soci: fields and validation (used by /tesseramento)
  * ------------------------------------------------------------------------- */
 
 /** What the association keeps for each member (LOGICHE.md §1). */
@@ -55,51 +52,49 @@ export function valida({ dati, privacy, statuto }: ModuloSocio, p = ''): Errori 
 }
 
 /* ---------------------------------------------------------------------------
- * Saving a pending member
+ * Membership request (LOGICHE.md §1): the site only collects it, the
+ * association approves it from the panel. The fee is paid outside the site.
  * ------------------------------------------------------------------------- */
 
+/** The email or phone already belong to an active member. */
 export class GiaSocio extends Error {}
+/** A request with the same email or phone is already waiting for approval. */
+export class RichiestaInCorso extends Error {}
 
-/**
- * Saves the member as `in_attesa`, or refreshes an earlier unfinished signup
- * with the same email. Throws GiaSocio if the email or phone already belong
- * to an active member.
- */
-export async function salvaSocioInAttesa(dati: DatiSocio): Promise<string> {
+/** Saves the request as `in_attesa`. Throws GiaSocio or RichiestaInCorso. */
+export async function inviaRichiesta(dati: DatiSocio, sito: string): Promise<void> {
   const sb = supabaseServizio();
+  const tel = normTel(dati.telefono);
 
   // Separate parameterised lookups: never splice user input into a PostgREST filter string.
-  const [perEmail, perTel] = await Promise.all([socioDaContatto(dati.email), socioDaContatto(normTel(dati.telefono))]);
+  const [perEmail, perTel] = await Promise.all([socioDaContatto(dati.email), socioDaContatto(tel)]);
   if (perEmail || perTel) throw new GiaSocio();
 
-  const riga = {
+  const [r1, r2] = await Promise.all([
+    sb.from('soci').select('id').eq('stato', 'in_attesa').eq('email', dati.email).limit(1),
+    sb.from('soci').select('id').eq('stato', 'in_attesa').eq('telefono', tel).limit(1),
+  ]);
+  if (r1.error) throw r1.error;
+  if (r2.error) throw r2.error;
+  if (r1.data.length || r2.data.length) throw new RichiestaInCorso();
+
+  const ora = new Date().toISOString();
+  const { error } = await sb.from('soci').insert({
     ...dati,
     data_nascita: dati.data_nascita || null,
     stato: 'in_attesa',
     origine: 'online',
-    consenso_privacy_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  const { data: esistente, error: e1 } = await sb
-    .from('soci').select('id').eq('stato', 'in_attesa').eq('origine', 'online').eq('email', dati.email)
-    .order('created_at', { ascending: false }).limit(1).maybeSingle();
-  if (e1) throw e1;
-  if (esistente) {
-    const { error } = await sb.from('soci').update(riga).eq('id', esistente.id);
-    if (error) throw error;
-    return esistente.id;
-  }
-  const { data, error } = await sb.from('soci').insert(riga).select('id').single();
+    consenso_privacy_at: ora,
+    updated_at: ora,
+  });
   if (error) throw error;
-  return data.id;
-}
 
-/** Signup only (no ticket): saves the member, opens a SumUp checkout and returns the payment page. */
-export async function avviaIscrizione(dati: DatiSocio, sito: string): Promise<string> {
-  const id = await salvaSocioInAttesa(dati);
-  const c = await creaCheckout({ tipo: 't', id, importoCent: quota.importo * 100, descrizione: `Quota associativa PNL Officina Creativa · ${dati.nome} ${dati.cognome}`, sito });
-  await supabaseServizio().from('soci').update({ checkout_id: c.id }).eq('id', id);
-  return `/pagamento/${c.id}`;
+  // A receipt, if email is set up; the request is saved either way.
+  try {
+    await inviaEmail({ to: dati.email, ...emailRichiesta({ nome: dati.nome, sito }) });
+  } catch (err) {
+    console.error('email richiesta', err);
+  }
 }
 
 /* ---------------------------------------------------------------------------

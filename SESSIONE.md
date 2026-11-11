@@ -62,6 +62,13 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
   - nuovo gradino di scala `--step--2` per i testi piccoli (timbro, sottotitolo del marchio, righe legali del footer, badge del pannello); le altre dimensioni scritte a mano usano i gradini esistenti;
   - l'altezza dell'header è nelle variabili `--mast-row` e `--mast-h`, usate da hero, menu mobile, scheda evento e `scroll-padding`.
 
+## 11 novembre: adesione su richiesta, biglietti esterni, import
+- **Adesione su richiesta** (lo statuto vuole un'ammissione decisa dall'associazione): `/tesseramento` raccoglie solo la richiesta, senza pagamento; si approva o rifiuta da `/admin` → Soci. La quota si paga fuori dal sito. Tolta la spunta "Mi iscrivo adesso" dai biglietti. Dettagli in `LOGICHE.md` §1.
+- **Biglietti esterni:** per ogni evento si sceglie "sul nostro sito" o "su un sito esterno" con il link.
+- **Import:** legge anche il CSV esportato dal pannello (data di nascita, data d'iscrizione; i receduti non entrano). Il riepilogo nomina chi è stato saltato e con quale socio coincide.
+- **Migrazione `0006_richieste_biglietti_esterni.sql`:** va eseguita su Supabase **prima** di pubblicare il codice (il sito legge la nuova colonna `biglietti_url`).
+- Attenzione: il `.env` locale punta al database vero. Le prove dei moduli in locale scrivono dati reali.
+
 ## Da fare
 1. Creare gli account e mettere online seguendo `SETUP.md`.
 2. Dominio, per le email (Resend) e per il sito.

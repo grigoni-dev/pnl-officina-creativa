@@ -5,7 +5,7 @@ Il sito gira su **Vercel**. I dati (soci, album, foto) stanno su **Supabase**, i
 ## 1. Supabase (database, foto, login admin)
 
 1. Crea un progetto su supabase.com, **regione Europa** (Francoforte) per il GDPR. Annota la password del database.
-2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Poi fai lo stesso, in ordine, con tutte le altre migrazioni della cartella: `0002_libro_soci_ridotto.sql`, `0003_sumup.sql`, `0004_soci_manuali_comunicazioni.sql`, `0005_elimina_evento.sql`. Si possono rieseguire senza problemi. Insieme creano:
+2. **SQL Editor** → incolla tutto `supabase/migrations/0001_init.sql` → *Run*. Poi fai lo stesso, in ordine, con tutte le altre migrazioni della cartella: `0002_libro_soci_ridotto.sql`, `0003_sumup.sql`, `0004_soci_manuali_comunicazioni.sql`, `0005_elimina_evento.sql`, `0006_richieste_biglietti_esterni.sql`. Si possono rieseguire senza problemi. Insieme creano:
    - le tabelle di soci, eventi, ordini, biglietti, album, foto e staff;
    - le regole di accesso;
    - i bucket `album` e `locandine`;
@@ -63,7 +63,7 @@ where user_id = (select id from auth.users where email = 'nome@esempio.it');
 
 **Password dimenticata**: in **Authentication → Users**, sull'utente, imposta una password nuova e comunicagliela. "Send password recovery" manda un'email solo se in Supabase è configurato l'invio email.
 
-## 2. SumUp (quota e biglietti)
+## 2. SumUp (biglietti)
 
 I pagamenti online passano da SumUp: commissione del 2,5% per pagamento, senza costi fissi.
 

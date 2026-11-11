@@ -4,11 +4,10 @@ import Nav from '../../../components/Nav.astro';
 import Footer from '../../../components/Footer.astro';
 import Reg from '../../../components/Reg.astro';
 import Campo from '../../../components/Campo.astro';
-import { contatti, quota, statuto } from '../../../data/site';
+import { contatti } from '../../../data/site';
 import { etichettaAccesso, eventoDaSlug, euro, giornoEvento, orario, statoVendita } from '../../../lib/eventi';
 import { entroIlLimite, impronta } from '../../../lib/limiti';
 import { ErroreOrdine, annullaCheckout, creaOrdine, leggiOrdine, validaOrdine, type Errori, type ModuloOrdine } from '../../../lib/ordini';
-import { vuoto } from '../../../lib/soci';
 import { indirizzoSito } from '../../../lib/sito';
 import { NonConfigurato, supabaseServizio } from '../../../lib/supabase';
 import { verifica } from '../../../lib/firma';
@@ -18,6 +17,8 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 
 const e = await eventoDaSlug(Astro.params.evento ?? '');
 if (!e) return new Response(null, { status: 404 });
+// Tickets sold elsewhere: send the visitor there (also for old links to this page).
+if (e.bigliettiUrl) return Astro.redirect(e.bigliettiUrl, 302);
 const vendita = statoVendita(e);
 const max = Math.max(1, Math.min(e.maxPerOrdine, e.postiRimasti ?? e.maxPerOrdine));
 const soci = e.accesso === 'soci';
@@ -27,8 +28,7 @@ const aPersona = prezzo + prevendita;
 
 let m: ModuloOrdine = {
   acquirente: { nome: '', cognome: '', email: '', telefono: '' },
-  quantita: 1, perMe: true, biglietti: [], iscriviti: false,
-  socio: { dati: vuoto(), privacy: false, statuto: false }, privacy: false,
+  quantita: 1, perMe: true, biglietti: [], privacy: false,
 };
 let errori: Errori = {};
 
@@ -70,8 +70,8 @@ if (annullato && Astro.request.method === 'GET') await annullaCheckout(annullato
 
 const righe = Array.from({ length: max }, (_, i) => m.biglietti[i] ?? { nome: '', cognome: '', contatto: '' });
 const nErrori = Object.keys(errori).filter((k) => k !== 'generale' && k !== 'non_socio').length;
-const totale = aPersona * m.quantita + (m.iscriviti ? quota.importo * 100 : 0);
-const azione = prezzo > 0 || m.iscriviti ? 'Vai al pagamento' : 'Conferma la prenotazione';
+const totale = aPersona * m.quantita;
+const azione = prezzo > 0 ? 'Vai al pagamento' : 'Conferma la prenotazione';
 const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
 ---
 <Base title={`${titoloPagina} · ${e.titolo} · PNL Officina Creativa`} description={`${titoloPagina} per ${e.titolo}.`}>
@@ -87,7 +87,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <div><dt class="label">Dove</dt><dd>{e.luogoNome}</dd></div>
           <div><dt class="label">Ingresso</dt><dd>{prezzo ? `${euro(prezzo)} a persona${prevendita ? ` + ${euro(prevendita)} di diritto di prevendita` : ''}` : 'Libero, con prenotazione'} · {etichettaAccesso(e)}</dd></div>
         </dl>
-        {soci && <p class="body nota-soci">Ogni biglietto è per un socio: per ognuno serve l’email o il telefono con cui è iscritto.</p>}
+        {soci && <p class="body nota-soci">Ogni biglietto è per un socio: per ognuno serve l’email o il telefono con cui è iscritto. Non sei socio? <a class="link" href="/tesseramento">Richiedi la tessera</a>.</p>}
       </header>
 
       {vendita !== 'aperta' ? (
@@ -98,11 +98,12 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <a class="btn btn--paper" href="/eventi">Torna agli eventi</a>
         </div>
       ) : (
-      <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={aPersona} data-quota={quota.importo * 100}>
+      <form class="modulo__form" method="post" novalidate data-hides-actionbar data-prezzo={aPersona}>
         {precompilato && <p class="avviso" role="status">Ciao {m.acquirente.nome}! I tuoi dati sono già qui: scegli quanti biglietti e vai al pagamento.</p>}
         {annullato && !Object.keys(errori).length && <p class="avviso" role="status">Pagamento annullato: non ti è stato addebitato nulla e i posti sono di nuovo liberi. Puoi riprovare quando vuoi.</p>}
+        {errori.non_socio && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">{errori.non_socio} Se il primo biglietto è per un amico socio, togli la spunta “Il primo biglietto è per me”. Per diventare socio: <a class="link" href="/tesseramento">richiedi la tessera</a>.</p>}
         {errori.generale && <p class="avviso avviso--errore" role="alert">{errori.generale} <a class="link" href={`mailto:${contatti.email}`}>{contatti.email}</a></p>}
-        {nErrori > 0 && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}
+        {nErrori > 0 && !errori.non_socio && <p class="avviso avviso--errore" role="alert" tabindex="-1" id="riepilogo-errori">Controlla {nErrori === 1 ? 'il campo segnato' : `i ${nErrori} campi segnati`} qui sotto.</p>}
 
         <fieldset class="gruppo">
           <legend class="display h3">I tuoi dati</legend>
@@ -143,21 +144,11 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           </ol>
         </fieldset>
 
-        {soci && (
-          <fieldset class:list={['gruppo', 'iscrizione', errori.non_socio && 'iscrizione--evidenzia']}>
-            <legend class="display h3">Non sei ancora socio?</legend>
-            {errori.non_socio && <p class="avviso avviso--errore" role="alert">{errori.non_socio}</p>}
-            <label class:list={['check', 'iscrizione__spunta', errori.non_socio && 'check--errore']}>
-              <input type="checkbox" name="iscriviti" value="si" checked={m.iscriviti} data-iscriviti />
-              <span><strong>Mi iscrivo adesso</strong> e accetto lo <a class="link" href={statuto} target="_blank">statuto</a>: tessera da {quota.importo}&nbsp;€ insieme al biglietto, in un solo pagamento. Uso i dati che ho scritto sopra.</span>
-            </label>
-          </fieldset>
-        )}
 
         <div class="consensi">
           <label class:list={['check', errori.privacy && 'check--errore']}>
             <input type="checkbox" name="privacy" value="si" checked={m.privacy} />
-            <span>Ho letto l’<a class="link" href="/privacy" target="_blank">informativa privacy</a> e acconsento all’uso dei dati per i biglietti e l’ingresso all’evento{soci && ' e, se mi iscrivo, per il libro soci'}.</span>
+            <span>Ho letto l’<a class="link" href="/privacy" target="_blank">informativa privacy</a> e acconsento all’uso dei dati per i biglietti e l’ingresso all’evento.</span>
           </label>
           {errori.privacy && <p class="field__err">{errori.privacy}</p>}
         </div>
@@ -166,7 +157,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
           <p class="display paga__importo" data-totale aria-live="polite">{totale ? euro(totale) : 'Gratis'}</p>
           <div class="paga__testo">
             <button class="btn paga__btn" type="submit" data-azione>{azione}</button>
-            <p class="paga__note">{prezzo > 0 || soci ? 'Nella pagina dopo paghi con SumUp, in modo sicuro, con la carta. ' : ''}I biglietti arrivano per email, con un QR per ognuno da mostrare all’ingresso.{prevendita > 0 && ` Il totale comprende ${euro(prevendita)} di diritto di prevendita a biglietto.`}</p>
+            <p class="paga__note">{prezzo > 0 ? 'Nella pagina dopo paghi con SumUp, in modo sicuro, con la carta. ' : ''}I biglietti arrivano per email, con un QR per ognuno da mostrare all’ingresso.{prevendita > 0 && ` Il totale comprende ${euro(prevendita)} di diritto di prevendita a biglietto.`}</p>
           </div>
         </div>
       </form>
@@ -178,14 +169,13 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
 
 <script>
   // Progressive enhancement: show as many ticket rows as chosen, hide the
-  // buyer's row when it's "for me", open the member fields, keep the total live.
+  // buyer's row when it's "for me", keep the total live.
   const form = document.querySelector<HTMLFormElement>('.modulo__form[data-prezzo]');
   document.getElementById('riepilogo-errori')?.focus();
   if (form) {
-    const prezzo = Number(form.dataset.prezzo), quota = Number(form.dataset.quota);
+    const prezzo = Number(form.dataset.prezzo);
     const q = form.querySelector<HTMLSelectElement>('#quantita')!;
     const perMe = form.querySelector<HTMLInputElement>('[name="per_me"]')!;
-    const iscr = form.querySelector<HTMLInputElement>('[data-iscriviti]');
     const totale = form.querySelector<HTMLElement>('[data-totale]')!;
     const bottone = form.querySelector<HTMLButtonElement>('[data-azione]')!;
     const euro = (c: number) => `${(c / 100).toLocaleString('it-IT', { minimumFractionDigits: c % 100 ? 2 : 0 })} €`;
@@ -196,7 +186,7 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
         const i = Number(r.dataset.riga);
         r.hidden = i >= n || (i === 0 && perMe.checked);
       });
-      const t = prezzo * n + (iscr?.checked ? quota : 0);
+      const t = prezzo * n;
       totale.textContent = t ? euro(t) : 'Gratis';
       bottone.textContent = t ? 'Vai al pagamento' : 'Conferma la prenotazione';
     };
@@ -216,6 +206,4 @@ const titoloPagina = prezzo > 0 ? 'Biglietti' : 'Prenota';
   .riga { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--blue) 40%, transparent); }
   .riga[hidden] { display: none; }
   .riga__me { opacity: 0.7; }
-  .iscrizione .check { clear: both; }
-  .iscrizione--evidenzia { border-top-color: var(--pink); }
 </style>

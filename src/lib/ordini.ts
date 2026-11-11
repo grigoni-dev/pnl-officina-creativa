@@ -1,18 +1,17 @@
-import { quota } from '../data/site';
 import { contattoValido, emailValida, normEmail, socioDaContatto, telefonoValido } from './contatti';
 import { emailBiglietti, inviaEmail } from './email';
 import type { Evento } from './eventi';
-import { attivaSocio, salvaSocioInAttesa, GiaSocio, type ModuloSocio } from './soci';
+import { attivaSocio } from './soci';
 import { creaCheckout, disattivaCheckout } from './sumup';
 import { supabaseServizio } from './supabase';
 
 /**
- * Buying tickets (LOGICHE.md §3). The form posts:
+ * Buying tickets (LOGICHE.md §3). Joining the association is a separate request
+ * (/tesseramento), never part of an order. The form posts:
  *   a_nome, a_cognome, a_email, a_telefono   buyer
  *   quantita                                 1..max
  *   per_me=si                                ticket 1 is the buyer's
  *   b{i}_nome, b{i}_cognome, b{i}_contatto   each ticket (contatto: members-only events)
- *   iscriviti=si                             buyer joins in the same payment, with the details above (members-only events)
  *   privacy=si
  */
 
@@ -23,8 +22,6 @@ export type ModuloOrdine = {
   quantita: number;
   perMe: boolean;
   biglietti: RigaBiglietto[];
-  iscriviti: boolean;
-  socio: ModuloSocio;
   privacy: boolean;
 };
 export type Errori = Partial<Record<string, string>>;
@@ -36,17 +33,8 @@ export function leggiOrdine(form: FormData, max: number): ModuloOrdine {
   const perMe = form.get('per_me') === 'si';
   const biglietti = Array.from({ length: quantita }, (_, i) => ({ nome: s(`b${i}_nome`), cognome: s(`b${i}_cognome`), contatto: s(`b${i}_contatto`) }));
   if (perMe) biglietti[0] = { nome: acquirente.nome, cognome: acquirente.cognome, contatto: acquirente.email };
-  const iscriviti = form.get('iscriviti') === 'si';
   const privacy = form.get('privacy') === 'si';
-  // Joining from here takes just the tick: the buyer's details become the member's,
-  // the tick accepts the statute, the privacy consent below covers the member register.
-  // The date of birth stays empty and is asked later (the member shows as "manca la data di nascita").
-  const socio: ModuloSocio = {
-    dati: { nome: acquirente.nome, cognome: acquirente.cognome, data_nascita: '', email: acquirente.email, telefono: acquirente.telefono },
-    statuto: iscriviti,
-    privacy,
-  };
-  return { acquirente, quantita, perMe, biglietti, iscriviti, socio, privacy };
+  return { acquirente, quantita, perMe, biglietti, privacy };
 }
 
 export function validaOrdine(m: ModuloOrdine, e: Evento): Errori {
@@ -78,26 +66,13 @@ export type Esito = { tipo: 'pagamento'; url: string } | { tipo: 'confermato'; o
 export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Promise<Esito> {
   const sb = supabaseServizio();
   const socioIds: (string | null)[] = m.biglietti.map(() => null);
-  let socioNuovo: string | null = null;
 
   if (e.accesso === 'soci') {
     const err: Errori = {};
     for (const [i, b] of m.biglietti.entries()) {
       if (i === 0 && m.perMe) {
         socioIds[0] = (await socioDaContatto(m.acquirente.email)) ?? (await socioDaContatto(m.acquirente.telefono));
-        if (!socioIds[0]) {
-          if (!m.iscriviti) {
-            err.non_socio = 'Non risulti socio con questa email o questo telefono. Spunta “Mi iscrivo adesso” qui sotto: paghi tessera e biglietto insieme, con i dati che hai già scritto.';
-          } else {
-            try {
-              socioNuovo = await salvaSocioInAttesa(m.socio.dati);
-              socioIds[0] = socioNuovo;
-            } catch (x) {
-              if (!(x instanceof GiaSocio)) throw x;
-              err.non_socio = 'Con questa email o questo telefono risulti già socio, ma non risulta attivo: scrivici e sistemiamo.';
-            }
-          }
-        }
+        if (!socioIds[0]) err.non_socio = 'Non risulti socio con questa email o questo telefono, e questo evento è riservato ai soci.';
       } else {
         socioIds[i] = await socioDaContatto(b.contatto);
         if (!socioIds[i]) err[`b${i}_contatto`] = `${b.nome || 'Questa persona'} non risulta socia con questo contatto. Per questo evento servono biglietti a nome di soci.`;
@@ -112,13 +87,12 @@ export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Prom
     if (Object.keys(err).length) throw new ErroreOrdine(err);
   }
 
-  const quotaCent = socioNuovo ? quota.importo * 100 : 0;
   const { data: ordine, error } = await sb.rpc('crea_ordine', {
     p_evento: e.id,
     p_acquirente: m.acquirente,
     p_biglietti: m.biglietti.map((b, i) => ({ nome: b.nome, cognome: b.cognome, socio_id: socioIds[i] })),
-    p_socio_nuovo: socioNuovo,
-    p_quota_cent: quotaCent,
+    p_socio_nuovo: null,
+    p_quota_cent: 0,
   });
   if (error) {
     const msg = error.message ?? '';
@@ -139,8 +113,8 @@ export async function creaOrdine(m: ModuloOrdine, e: Evento, sito: string): Prom
     return { tipo: 'confermato', ordineId: ordine.id };
   }
 
-  const totale = ordine.importo_cent + (ordine.prevendita_cent ?? 0) + ordine.quota_cent;
-  const descrizione = `${e.titolo} · ${m.quantita} bigliett${m.quantita === 1 ? 'o' : 'i'}${quotaCent ? ' + tessera' : ''}`;
+  const totale = ordine.importo_cent + (ordine.prevendita_cent ?? 0);
+  const descrizione = `${e.titolo} · ${m.quantita} bigliett${m.quantita === 1 ? 'o' : 'i'}`;
   const c = await creaCheckout({ tipo: 'o', id: ordine.id, importoCent: totale, descrizione, sito });
   await sb.from('ordini').update({ checkout_id: c.id }).eq('id', ordine.id);
   return { tipo: 'pagamento', url: `/pagamento/${c.id}` };
