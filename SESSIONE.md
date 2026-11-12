@@ -1,6 +1,13 @@
-# Dove siamo rimasti (11 novembre 2026)
+# Dove siamo rimasti (12 novembre 2026)
 
-Il sito è online su https://pnl-officina-creativa.vercel.app/.
+Il sito è online su https://pnl-officina-creativa-five.vercel.app/.
+
+## 12 novembre: account dell'associazione
+- Vercel e Supabase ora sono su account dell'associazione. Il progetto Supabase nuovo è `onggyphvclvledtmwwkb`, in Irlanda; le funzioni del sito girano a Dublino (`dub1` in `vercel.json`).
+- Soci, eventi, album, foto e file sono stati copiati dal vecchio progetto e controllati: sono identici. Poi i vecchi progetti sono stati cancellati.
+- Il repository è pubblico: Vercel gratuito non pubblica da un repository privato se i commit non sono del proprietario dell'account.
+- Il `.env` locale punta al progetto nuovo, che è quello vero.
+- **Da fare:** dominio comprato su Aruba (in attivazione); poi i record DNS per Vercel e per Resend (`mail.<dominio>`), `SITE_URL`, e una prova completa con le email.
 
 ## Fatto
 - PRODUCT.md: il contesto del prodotto (tessera da 5 € pagata una volta, stato attivo/receduto, sito in italiano).
