@@ -7,7 +7,24 @@ Il sito è online su https://pnl-officina-creativa-five.vercel.app/.
 - Soci, eventi, album, foto e file sono stati copiati dal vecchio progetto e controllati: sono identici. Poi i vecchi progetti sono stati cancellati.
 - Il repository è pubblico: Vercel gratuito non pubblica da un repository privato se i commit non sono del proprietario dell'account.
 - Il `.env` locale punta al progetto nuovo, che è quello vero.
-- **Da fare:** dominio comprato su Aruba (in attivazione); poi i record DNS per Vercel e per Resend (`mail.<dominio>`), `SITE_URL`, e una prova completa con le email.
+- Gli account (Vercel, Supabase, Resend) sono intestati alla Gmail dell'associazione, pnl.officinacreativa@gmail.com, che è anche l'utente admin del pannello.
+
+### Da qui si riparte
+Il dominio è stato comprato su Aruba il 12 novembre ed è in attivazione (circa 24 ore). Il pacchetto include 5 caselle email sul dominio principale. Quando è attivo:
+1. Farsi dare il nome del dominio.
+2. **Resend**: account con la Gmail dell'associazione, dominio di invio `mail.<dominio>` nella regione Ireland. Nel pannello DNS di Aruba vanno i record che Resend mostra: MX e TXT/SPF su `send.mail`, DKIM su `resend._domainkey.mail`, e un DMARC `p=none` su `_dmarc`. Controllarli con `dig` uno per uno. I record MX del dominio principale restano quelli di Aruba, per le caselle.
+3. **Vercel** → Settings → Domains: aggiungere `<dominio>` e `www.<dominio>`, poi creare su Aruba il record A e il CNAME che Vercel indica.
+4. Variabili d'ambiente su Vercel:
+   - `RESEND_API_KEY`: la inserisce l'utente, non va scritta in chat;
+   - `EMAIL_FROM` = `PNL Officina Creativa <tessera@mail.<dominio>>`;
+   - `EMAIL_REPLY_TO` = pnl.officinacreativa@gmail.com, oppure una casella Aruba;
+   - `SITE_URL` = `https://<dominio>`.
+
+   Poi un redeploy.
+5. Prova completa sul dominio: richiesta di adesione, approvazione, email di benvenuto, verifica tessera, biglietti esterni. Prima di inviare moduli veri, chiedere all'utente.
+6. Aggiornare `SETUP.md` (sezione Resend e dominio) e queste note.
+
+Ancora da confermare dall'utente: le prove dal sito del pannello (Approva, Rifiuta, Elimina, import, bollino dei dati mancanti).
 
 ## Fatto
 - PRODUCT.md: il contesto del prodotto (tessera da 5 € pagata una volta, stato attivo/receduto, sito in italiano).
