@@ -1,6 +1,15 @@
 # Dove siamo rimasti (12 novembre 2026)
 
-Il sito è online su https://pnl-officina-creativa-five.vercel.app/.
+Il sito è online su **https://www.pnlofficinacreativa.it** (il dominio senza `www` e il vecchio indirizzo `pnl-officina-creativa-five.vercel.app` funzionano ancora).
+
+## 12 novembre: dominio ed email
+- Dominio `pnlofficinacreativa.it` comprato su Aruba, attivo dalle 16:30. Le 5 caselle Aruba restano sul dominio principale.
+- Vercel: dominio collegato, `www` è il principale, HTTPS attivo.
+- Resend: dominio di invio `mail.pnlofficinacreativa.it` (Ireland), verificato. Le email partono da `tessera@mail.pnlofficinacreativa.it`.
+- Variabili su Vercel aggiornate (`RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`, `SITE_URL`) e redeploy fatto.
+- Prova completa fatta dall'utente sul dominio: funziona.
+- Lezione: il DKIM va copiato con il pulsante di copia di Resend. La prima volta un valore trascritto male ha fatto fallire la verifica. Aruba pubblica ogni modifica dopo circa 30 minuti.
+- `SETUP.md` aggiornato (sezioni Resend e Vercel con i record DNS veri).
 
 ## 12 novembre: account dell'associazione
 - Vercel e Supabase ora sono su account dell'associazione. Il progetto Supabase nuovo è `onggyphvclvledtmwwkb`, in Irlanda; le funzioni del sito girano a Dublino (`dub1` in `vercel.json`).
@@ -10,21 +19,9 @@ Il sito è online su https://pnl-officina-creativa-five.vercel.app/.
 - Gli account (Vercel, Supabase, Resend) sono intestati alla Gmail dell'associazione, pnl.officinacreativa@gmail.com, che è anche l'utente admin del pannello.
 
 ### Da qui si riparte
-Il dominio è stato comprato su Aruba il 12 novembre ed è in attivazione (circa 24 ore). Il pacchetto include 5 caselle email sul dominio principale. Quando è attivo:
-1. Farsi dare il nome del dominio.
-2. **Resend**: account con la Gmail dell'associazione, dominio di invio `mail.<dominio>` nella regione Ireland. Nel pannello DNS di Aruba vanno i record che Resend mostra: MX e TXT/SPF su `send.mail`, DKIM su `resend._domainkey.mail`, e un DMARC `p=none` su `_dmarc`. Controllarli con `dig` uno per uno. I record MX del dominio principale restano quelli di Aruba, per le caselle.
-3. **Vercel** → Settings → Domains: aggiungere `<dominio>` e `www.<dominio>`, poi creare su Aruba il record A e il CNAME che Vercel indica.
-4. Variabili d'ambiente su Vercel:
-   - `RESEND_API_KEY`: la inserisce l'utente, non va scritta in chat;
-   - `EMAIL_FROM` = `PNL Officina Creativa <tessera@mail.<dominio>>`;
-   - `EMAIL_REPLY_TO` = pnl.officinacreativa@gmail.com, oppure una casella Aruba;
-   - `SITE_URL` = `https://<dominio>`.
-
-   Poi un redeploy.
-5. Prova completa sul dominio: richiesta di adesione, approvazione, email di benvenuto, verifica tessera, biglietti esterni. Prima di inviare moduli veri, chiedere all'utente.
-6. Aggiornare `SETUP.md` (sezione Resend e dominio) e queste note.
-
-Ancora da confermare dall'utente: le prove dal sito del pannello (Approva, Rifiuta, Elimina, import, bollino dei dati mancanti).
+1. `robots.txt` e mappa del sito (non ci sono), poi registrare il dominio su Google Search Console.
+2. Aggiornare i link a `pnl-officina-creativa-five.vercel.app` dove sono stati condivisi (bio Instagram, Facebook): ora si usa il dominio.
+3. Ancora da confermare dall'utente: le prove dal sito del pannello (Approva, Rifiuta, Elimina, import, bollino dei dati mancanti).
 
 ## Fatto
 - PRODUCT.md: il contesto del prodotto (tessera da 5 € pagata una volta, stato attivo/receduto, sito in italiano).
@@ -94,8 +91,8 @@ Le regole del sito sono in **`LOGICHE.md`** (confermate dal cliente). In breve:
 - Attenzione: il `.env` locale punta al database vero. Le prove dei moduli in locale scrivono dati reali.
 
 ## Da fare
-1. Creare gli account e mettere online seguendo `SETUP.md`.
-2. Dominio, per le email (Resend) e per il sito.
+1. ~~Creare gli account e mettere online~~ (fatto il 12 novembre).
+2. ~~Dominio, per le email e per il sito~~ (fatto il 12 novembre).
 3. Far rileggere l’informativa privacy (dati del titolare completi); confermare la regola "solo maggiorenni" con lo statuto.
 4. Sentire il commercialista sui biglietti venduti a chi non è socio (IVA, corrispettivi, SIAE).
 

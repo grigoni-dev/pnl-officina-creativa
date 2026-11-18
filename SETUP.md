@@ -86,16 +86,28 @@ Attenzione: in sandbox gli importi di **11,00 €** e di **42,01 / 42,76 / 42,91
 
 1. Account su resend.com → **API Keys** → `RESEND_API_KEY`.
 2. Finché non c'è un dominio lascia `EMAIL_FROM=PNL Officina Creativa <onboarding@resend.dev>`. **Attenzione:** così Resend consegna solo all'email del proprietario dell'account Resend. Va bene per le prove, non per i soci veri.
-3. Quando avete il dominio: **Domains → Add domain**, aggiungi i record DNS che Resend indica e poi imposta `EMAIL_FROM=PNL Officina Creativa <tessera@vostrodominio.it>` e `EMAIL_REPLY_TO` sull'indirizzo che leggete davvero.
+3. Con il dominio (fatto il 12 novembre 2026 per `pnlofficinacreativa.it`):
+   - **Domains → Add domain** → `mail.pnlofficinacreativa.it`, regione **Ireland**. Si usa il sottodominio `mail.` perché le caselle Aruba restano sul dominio principale.
+   - Nel pannello DNS di Aruba (Gestione DNS → Aggiungi record) vanno i record che Resend mostra:
+     - TXT `resend._domainkey.mail`: la chiave DKIM. **Copiala con il pulsante di copia di Resend**: un solo carattere sbagliato e la verifica fallisce;
+     - CNAME `send.mail` e CNAME `rsend.mail`, verso i server di Resend.
+   - Il DMARC (`_dmarc`) l'ha già creato Aruba (`p=none`) e va bene così: non aggiungerne un secondo.
+   - Aruba pubblica le modifiche dopo circa 30 minuti. Poi su Resend: *Verify*.
+   - Su Vercel: `EMAIL_FROM=PNL Officina Creativa <tessera@mail.pnlofficinacreativa.it>` e `EMAIL_REPLY_TO` sull'indirizzo che leggete davvero. Poi un redeploy.
 
 **Comunicazioni ai soci.** Il piano gratuito di Resend manda al massimo **100 email al giorno** (3.000 al mese). Per scrivere a tutti i soci in una volta serve il piano **Pro** (20 $ al mese, 50.000 email, senza limite giornaliero). Con il piano gratuito l'invio si ferma a 100 e dal pannello si riprende il giorno dopo, da chi manca.
 
 ## 4. Vercel (il sito)
 
-1. Metti il progetto su GitHub (repository privato va benissimo).
+1. Metti il progetto su GitHub. Il repository è pubblico: con Vercel gratuito un repository privato si pubblica solo se i commit sono del proprietario dell'account Vercel.
 2. Su vercel.com → *Add New → Project* → importa il repository. Vercel riconosce Astro da solo.
 3. **Settings → Environment Variables**: inserisci tutte le variabili di `.env.example`, compresa `SITE_URL=https://<dominio>` e una stringa casuale in `RATE_LIMIT_SALT`.
-4. *Deploy*. Poi **Settings → Domains** per collegare il dominio, quando c'è.
+4. *Deploy*.
+5. **Settings → Domains**: `pnlofficinacreativa.it` e `www.pnlofficinacreativa.it` (il principale è `www`, l'altro rimanda lì). Su Aruba:
+   - il record A `@` si **modifica** (non se ne aggiunge un altro) da `62.149.128.40`, la pagina di cortesia di Aruba, all'IP che indica Vercel;
+   - il CNAME `www` si modifica verso il valore che indica Vercel.
+
+   Gli altri record di Aruba (MX, `mail`, `smtp`, `pop3`, `imap`, `webmail`, `a1._domainkey`, SPF) servono alle caselle email: non vanno toccati. Il certificato HTTPS lo crea Vercel da solo. `SITE_URL=https://www.pnlofficinacreativa.it`.
 
 Il piano Hobby di Vercel è gratuito ma pensato per uso non commerciale. Per un'associazione non profit di solito va bene, ma conviene leggere i termini.
 
